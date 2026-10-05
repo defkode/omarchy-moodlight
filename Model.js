@@ -84,6 +84,26 @@ function summary(lamps, setup) {
   return on + " of " + lamps.length + " on"
 }
 
+// "matte-black" -> "Matte Black", the way `omarchy theme current` shows it.
+function themeTitle(slug) {
+  return String(slug || "").trim().split("-").filter(function(w) { return w !== "" })
+    .map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1) }).join(" ")
+}
+
+// Subtitle under "OmaMood": setup and trouble first, then what the lamp is doing.
+function headline(lamps, setup, colorSource, themeSlug) {
+  var s = summary(lamps, setup)
+  if (s !== "" && (!lamps || lamps.length === 0 || (setup && setup.stage !== "idle" && setup.stage !== "done")))
+    return s
+  var online = onlineCount(lamps)
+  if (online === 0) return lamps.length === 1 ? "Lamp offline" : "Lamps offline"
+  if (!anyOn(lamps)) return "Lights out"
+  var theme = themeTitle(themeSlug)
+  if (colorSource === "off") return "Your colours, your rules"
+  if (!theme) return colorSource === "wallpaper" ? "Matching the wallpaper" : "Matching the theme"
+  return colorSource === "wallpaper" ? "Wearing " + theme : "Matching " + theme
+}
+
 function tooltip(lamps) {
   if (!lamps || lamps.length === 0) return "OmaMood: add a lamp"
   return lamps.map(function(l) {

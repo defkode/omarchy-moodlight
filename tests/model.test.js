@@ -6,7 +6,7 @@ const src = await Deno.readTextFile(new URL("../Model.js", import.meta.url))
 const M = {}
 new Function("exports", src.replace(/^\.pragma library$/m, "") + `
   for (const k of ["parseLine","anyOn","glyph","tint","hsvToHex","lampLine","summary","tooltip",
-    "stageLabel","discoveryLabel","parseColorsToml","swatches",
+    "stageLabel","discoveryLabel","themeTitle","headline","parseColorsToml","swatches",
     "bridgeSettings","themeCommand","parseCommand","backoff","GLYPH_ON","GLYPH_OFF","GLYPH_NONE"])
     exports[k] = eval(k)`)(M)
 
@@ -60,6 +60,22 @@ Deno.test("discovery label", () => {
   assertEquals(M.discoveryLabel({ stage: "done", found: [{ name: "Moodlight", ip: "10.0.0.9", moved: true }], missing: ["Desk"] }),
     "Moodlight moved to 10.0.0.9 · Desk not found")
   assertEquals(M.discoveryLabel({ stage: "done", found: [], missing: [], error: "boom" }), "Search failed: boom")
+})
+
+Deno.test("headline", () => {
+  assertEquals(M.themeTitle("matte-black"), "Matte Black")
+  assertEquals(M.themeTitle("p-bloom\n"), "P Bloom")
+  assertEquals(M.themeTitle(""), "")
+  const idle = { stage: "idle" }
+  assertEquals(M.headline([lamp()], idle, "accent", "tokyo-night"), "Matching Tokyo Night")
+  assertEquals(M.headline([lamp()], idle, "wallpaper", "tokyo-night"), "Wearing Tokyo Night")
+  assertEquals(M.headline([lamp()], idle, "off", "tokyo-night"), "Your colours, your rules")
+  assertEquals(M.headline([lamp({ on: false })], idle, "accent", "tokyo-night"), "Lights out")
+  assertEquals(M.headline([lamp({ online: false })], idle, "accent", "x"), "Lamp offline")
+  assertEquals(M.headline([lamp({ online: false }), lamp({ online: false })], idle, "accent", "x"), "Lamps offline")
+  assertEquals(M.headline([], idle, "accent", "x"), "No lamps yet")
+  assertEquals(M.headline([lamp()], { stage: "scan" }, "accent", "x"), "Scan with Smart Life, then tap Confirm login")
+  assertEquals(M.headline([lamp()], idle, "accent", ""), "Matching the theme")
 })
 
 Deno.test("palette", () => {

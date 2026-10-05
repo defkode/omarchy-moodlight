@@ -49,6 +49,16 @@ Panel {
   Binding { target: root.service; when: root.service !== null; property: "saturationFloor"; value: Number(root.setting("saturationFloor", 70)) }
   Binding { target: root.service; when: root.service !== null; property: "sleepAction"; value: String(root.setting("sleepAction", "off")) }
 
+  // ---- Theme name for the header ("Matching Tokyo Night").
+  property string themeSlug: ""
+  FileView {
+    id: themeNameFile
+    path: Quickshell.env("HOME") + "/.local/state/omarchy/current/theme.name"
+    watchChanges: true
+    onFileChanged: reload()
+    onLoaded: root.themeSlug = text().trim()
+  }
+
   // ---- Theme palette for the swatches; re-read when the theme changes.
   FileView {
     id: colorsFile
@@ -57,7 +67,7 @@ Panel {
   }
   Connections {
     target: Color
-    function onAccentChanged() { colorsFile.reload() }
+    function onAccentChanged() { colorsFile.reload(); themeNameFile.reload() }
   }
 
   // "Match lamp to": one setting for every lamp. With one lamp it sits inside
@@ -194,7 +204,7 @@ Panel {
               textFormat: Text.PlainText
               width: parent.width
               text: root.service && root.service.bridgeError !== "" ? root.service.bridgeError
-                : Model.summary(root.lamps, root.setupState).toUpperCase()
+                : Model.headline(root.lamps, root.setupState, root.colorSource, root.themeSlug).toUpperCase()
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
