@@ -185,11 +185,16 @@ Item {
   }
 
   // ---- Away.
+  property string lastIdleChange: ""
   IdleMonitor {
+    id: idleMonitor
     enabled: root.idleAction !== "none" && root.lamps.length > 0
     timeout: Math.max(30, root.idleSeconds)
     respectInhibitors: true
-    onIsIdleChanged: root.send({ cmd: "idle", value: isIdle })
+    onIsIdleChanged: {
+      root.lastIdleChange = new Date().toISOString() + " " + (isIdle ? "idle" : "active")
+      root.send({ cmd: "idle", value: isIdle })
+    }
   }
 
   // ---- IPC: `omarchy-shell omamood <method> [args]`. Lamp verbs act on every
@@ -202,6 +207,8 @@ Item {
       return JSON.stringify({ lamps: root.lamps, setup: root.setup, bridgeUp: root.bridgeUp,
         bridgeError: root.bridgeError, lastError: root.lastError, hookInstalled: root.hookInstalled,
         lastUrgent: root.lastUrgent,
+        idle: { enabled: idleMonitor.enabled, timeout: idleMonitor.timeout, isIdle: idleMonitor.isIdle,
+          lastChange: root.lastIdleChange },
         settings: { colorSource: root.colorSource, saturationFloor: root.saturationFloor,
           alertBlink: root.alertBlink, idleAction: root.idleAction, sleepAction: root.sleepAction } })
     }
