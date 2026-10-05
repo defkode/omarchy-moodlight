@@ -5,6 +5,8 @@ brightness and colour from the panel or keys; the lamp follows your wallpaper
 when you change themes, and switches off while the computer sleeps and comes
 back as it was when it wakes.
 
+<p align="center"><img src="docs/screenshot.png" alt="The OmaMood panel: lamp power and brightness, Match lamp to Wallpaper / Theme accent / Custom, and colour swatches" width="420"></p>
+
 - **Local.** Commands go straight to the lamp over your LAN. The cloud is used
   once, to fetch the lamp's key, and the session is logged out right after.
 - **No developer account.** Setup is one QR scan in the Smart Life app.
