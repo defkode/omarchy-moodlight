@@ -73,8 +73,8 @@ Panel {
 
     ButtonGroup {
       width: parent.width
-      options: [{ value: "wallpaper", label: "Wallpaper", tooltip: "Main colour of the wallpaper, on every theme change" },
-        { value: "accent", label: "Theme accent", tooltip: "The theme's accent colour, on every theme change" },
+      options: [{ value: "accent", label: "Theme accent", tooltip: "The theme's accent colour, on every theme change" },
+        { value: "wallpaper", label: "Wallpaper", tooltip: "Main colour of the wallpaper, on every theme change" },
         { value: "off", label: "Custom", tooltip: "Pick the colour yourself; theme changes leave the lamp alone" }]
       value: root.colorSource
       foreground: root.fg

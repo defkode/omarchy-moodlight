@@ -5,7 +5,7 @@ brightness and colour. The lamp can match your wallpaper or theme accent every
 time you change themes, and it switches off while the computer sleeps, coming
 back as it was when it wakes.
 
-<p align="center"><img src="docs/screenshot.png" alt="The OmaMood panel: settings icon, lamp power, Brightness slider, Match lamp to Wallpaper / Theme accent / Custom, and colour swatches" width="420"></p>
+<p align="center"><img src="docs/screenshot.png" alt="The OmaMood panel: settings icon, lamp power, Brightness slider, Match lamp to Theme accent / Wallpaper / Custom, and colour swatches" width="420"></p>
 
 - **Local.** Commands go straight to the lamp over your home network. The cloud
   is used once during setup, to fetch the lamp's key, and logged out right after.
@@ -60,8 +60,8 @@ readable only by you.
 
 - **Power** switch and **brightness** slider for each lamp.
 - **Match lamp to** decides what happens when you change themes:
-  - **Wallpaper**: the lamp takes the new wallpaper's main colour.
   - **Theme accent**: the lamp takes the theme's accent colour.
+  - **Wallpaper**: the lamp takes the new wallpaper's main colour.
   - **Custom**: theme changes leave the lamp alone, and you pick the colour from
     the swatches: white (the lamp's warm white), your theme's colours, or
     **Wallpaper** for the current wallpaper's colour.
@@ -120,7 +120,7 @@ Most people only need the panel. Everything can also be set with
 
 | Setting | Default | What it does |
 |:--|:--|:--|
-| `colorSource` | `wallpaper` | **Match lamp to**: `wallpaper`, `accent` or `off` (Custom) |
+| `colorSource` | `wallpaper` | **Match lamp to**: `accent`, `wallpaper` or `off` (Custom) |
 | `saturationFloor` | `70` | how much (%) muted theme colours are boosted |
 | `sleepAction` | `off` | `off`: lamps off during sleep. `none`: leave them alone |
 | `tintIcon` | `true` | colour the bar icon like the lamp |
