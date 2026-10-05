@@ -100,6 +100,18 @@ function stageLabel(setup) {
   }
 }
 
+// "Find lamps" progress line; "" when there is nothing to say.
+function discoveryLabel(d) {
+  if (!d || d.stage === "idle" || !d.stage) return ""
+  if (d.stage === "searching") return "Searching your network…"
+  if (d.error) return "Search failed: " + d.error
+  var parts = (d.found || []).map(function(f) {
+    return f.name + (f.moved ? " moved to " : " at ") + f.ip
+  })
+  if ((d.missing || []).length) parts.push(d.missing.join(", ") + " not found")
+  return parts.length ? parts.join(" · ") : "No lamps configured"
+}
+
 // colors.toml -> {accent: "#..", red: "#..", ...}; tolerant line parser.
 function parseColorsToml(text) {
   var out = {}

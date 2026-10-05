@@ -51,7 +51,9 @@ Every command may carry `"id"`; the bridge then answers with a `result` line.
 
 A full `state` line follows every change (coalesced over ~30 ms). The lamp's own
 buttons and other apps show up too: the bridge keeps a connection per lamp and
-reads its STATUS pushes. `setup.stage` walks `requesting → scan (with "qr": rows of
+reads its STATUS pushes. `discovery` reports `discover`: `{"stage": "searching"}`, then
+`{"stage": "done", "found": [{"name", "ip", "moved"}], "missing": [names], "seconds"}`
+(or `"error"`), back to `{"stage": "idle"}` after 15 s. `setup.stage` walks `requesting → scan (with "qr": rows of
 "0"/"1") → fetching → locating → done (added, skipped)`, or `error` (`error`).
 
 ## stderr

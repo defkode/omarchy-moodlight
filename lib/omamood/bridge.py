@@ -39,6 +39,9 @@ class Bridge:
         self.profile_db = profiles.load_all()
         self.workers = {}
         self.setup = {"stage": "idle"}
+        # "Find lamps": idle -> searching -> done (found/moved/missing), back to idle after a while.
+        self.discovery = {"stage": "idle"}
+        self.discovery_lock = threading.Lock()
         self.setup_cancel = threading.Event()
         self.settings = {"saturationFloor": 0.7, "sleepAction": "off"}
         self.sleep_snapshot = None
@@ -61,6 +64,7 @@ class Bridge:
         return {"type": "state",
                 "lamps": [w.lamp.state() for w in list(self.workers.values())],
                 "setup": dict(self.setup),
+                "discovery": dict(self.discovery),
                 "configured": len(self.workers)}
 
     def publisher(self):
@@ -138,6 +142,8 @@ class Bridge:
             self.load()
             return {"removed": removed.get("name") or removed["id"]}
         if name == "discover":
+            if self.discovery.get("stage") == "searching":
+                return {"already": True}
             threading.Thread(target=self.rediscover, daemon=True).start()
             return {}
         raise lamps.CommandError("unknown command %r" % name)
@@ -232,10 +238,35 @@ class Bridge:
             self.set_setup(stage="error", error=str(e))
 
     def rediscover(self):
-        records = store.load_devices()
-        discovery.locate(records, log=self.log)
-        store.save_devices(records)
-        self.load()
+        if not self.discovery_lock.acquire(blocking=False):
+            return
+        try:
+            self.discovery = {"stage": "searching", "started": time.time()}
+            self.mark()
+            records = store.load_devices()
+            before = {r["id"]: r.get("ip") for r in records}
+            reached = discovery.locate(records, log=self.log)
+            store.save_devices(records)
+            self.load()
+            found = [{"name": r.get("name") or r["id"], "ip": r.get("ip"),
+                      "moved": before.get(r["id"]) != r.get("ip")}
+                     for r in records if r["id"] in reached]
+            missing = [r.get("name") or r["id"] for r in records if r["id"] not in reached]
+            self.discovery = {"stage": "done", "found": found, "missing": missing,
+                              "seconds": round(time.time() - self.discovery["started"], 1)}
+        except Exception as e:
+            self.log("discover failed:", e)
+            self.discovery = {"stage": "done", "found": [], "missing": [], "error": str(e)}
+        finally:
+            self.discovery_lock.release()
+            self.mark()
+        # The result stays up long enough to read, then the line goes away.
+        done = self.discovery
+        def clear():
+            if self.discovery is done:
+                self.discovery = {"stage": "idle"}
+                self.mark()
+        threading.Timer(15, clear).start()
 
     # ---- main ----
 

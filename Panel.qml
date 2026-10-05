@@ -21,6 +21,8 @@ Panel {
   readonly property var service: bar && bar.shell ? bar.shell.serviceFor("io.github.defkode.omamood") : null
   readonly property var lamps: service ? service.lamps : []
   readonly property var setupState: service ? service.setup : ({ stage: "idle" })
+  readonly property var discoveryState: service ? service.discovery : ({ stage: "idle" })
+  readonly property bool searching: discoveryState.stage === "searching"
   readonly property bool settingUp: ["requesting", "scan", "fetching", "locating"].indexOf(setupState.stage) >= 0
   readonly property bool showSetup: lamps.length === 0 || setupOpen || settingUp || setupState.stage === "error"
   property bool setupOpen: false
@@ -437,12 +439,24 @@ Panel {
             onClicked: root.setupOpen = !root.setupOpen
           }
           Button {
-            text: "Find lamps"
-            foreground: root.fg
+            text: root.searching ? "Searching…" : "Find lamps"
+            foreground: root.searching ? root.dim : root.fg
             fontFamily: root.fontFamily
             fontSize: Style.font.caption
-            onClicked: root.cmd({ cmd: "discover" })
+            onClicked: if (!root.searching) root.cmd({ cmd: "discover" })
           }
+        }
+
+        // "Find lamps" progress and result (the bridge clears it after ~15 s).
+        Text {
+          width: parent.width
+          visible: text !== ""
+          textFormat: Text.PlainText
+          text: Model.discoveryLabel(root.discoveryState)
+          wrapMode: Text.Wrap
+          color: (root.discoveryState.missing || []).length || root.discoveryState.error ? Color.urgent : root.dim
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
         }
       }
     }

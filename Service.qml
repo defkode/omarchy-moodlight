@@ -36,6 +36,7 @@ Item {
   // ---- State from the bridge.
   property var lamps: []
   property var setup: ({ stage: "idle" })
+  property var discovery: ({ stage: "idle" })
   property bool bridgeUp: false
   property string bridgeError: ""
   property string lastError: ""
@@ -61,6 +62,7 @@ Item {
     if (obj.type === "state") {
       root.lamps = obj.lamps || []
       root.setup = obj.setup || { stage: "idle" }
+      root.discovery = obj.discovery || { stage: "idle" }
       root.bridgeUp = true
       root.bridgeError = ""
       root.restartDelay = 0
@@ -130,7 +132,7 @@ Item {
 
     function ping(): string { return "pong" }
     function status(): string {
-      return JSON.stringify({ lamps: root.lamps, setup: root.setup, bridgeUp: root.bridgeUp,
+      return JSON.stringify({ lamps: root.lamps, setup: root.setup, discovery: root.discovery, bridgeUp: root.bridgeUp,
         bridgeError: root.bridgeError, lastError: root.lastError, hookInstalled: root.hookInstalled,
         settings: { colorSource: root.colorSource, saturationFloor: root.saturationFloor,
           sleepAction: root.sleepAction } })
