@@ -288,6 +288,12 @@ Panel {
               }
             }
 
+            PanelSectionHeader {
+              visible: lampCard.usable
+              text: "Brightness"
+              foreground: root.dim
+            }
+
             PanelSlider {
               width: parent.width
               visible: lampCard.usable
