@@ -168,6 +168,8 @@ class Lamp:
     def blink(self, colour="#ff0000", count=3, period=0.5):
         """Flash `count` times with instant changes, then restore exactly."""
         h, s, v = parse_colour(colour)
+        if s >= 0.08:
+            s = max(s, 0.8)     # a theme's muted "urgent" still has to read as an alert
         on_msg = self.light.realtime(h, s, max(v, 0.6))
         saved = dict(self.status)
         if on_msg is None:

@@ -14,12 +14,15 @@ Panel {
   // The service owns the "omamood" IPC target; the shell's own
   // `shell toggle <id>` opens and closes this panel.
   manageIpc: false
+  // The bar sizes a widget from its implicit size.
+  implicitWidth: button.implicitWidth
+  implicitHeight: button.implicitHeight
 
   readonly property var service: bar && bar.shell ? bar.shell.serviceFor("io.github.defkode.omamood") : null
   readonly property var lamps: service ? service.lamps : []
   readonly property var setupState: service ? service.setup : ({ stage: "idle" })
-  readonly property bool settingUp: setupState.stage !== "idle" && setupState.stage !== "done"
-  readonly property bool showSetup: lamps.length === 0 || setupOpen || settingUp
+  readonly property bool settingUp: ["requesting", "scan", "fetching", "locating"].indexOf(setupState.stage) >= 0
+  readonly property bool showSetup: lamps.length === 0 || setupOpen || settingUp || setupState.stage === "error"
   property bool setupOpen: false
   property var palette: ({})
   readonly property color fg: bar ? bar.foreground : Color.foreground
@@ -399,8 +402,8 @@ Panel {
           }
 
           Button {
-            visible: root.settingUp
-            text: "Cancel"
+            visible: root.settingUp || root.setupState.stage === "error"
+            text: root.settingUp ? "Cancel" : "Dismiss"
             foreground: root.fg
             fontFamily: root.fontFamily
             onClicked: root.cmd({ cmd: "setup.cancel" })

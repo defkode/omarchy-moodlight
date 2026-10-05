@@ -74,7 +74,7 @@ function lampLine(l) {
 }
 
 function summary(lamps, setup) {
-  if (setup && setup.stage && setup.stage !== "idle" && setup.stage !== "done") return stageLabel(setup)
+  if (setup && ["requesting", "scan", "fetching", "locating", "error"].indexOf(setup.stage) >= 0) return stageLabel(setup)
   if (!lamps || lamps.length === 0) return "No lamps yet"
   var on = 0, online = onlineCount(lamps)
   for (var i = 0; i < lamps.length; i++) if (lamps[i].online && lamps[i].on) on++

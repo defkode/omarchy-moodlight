@@ -55,6 +55,8 @@ Item {
   property var openedAt: ({})
   property real lastAlertAt: 0
   property string pendingUrgent: ""
+  // The last urgent window considered, for `status` (debugging, agents).
+  property var lastUrgent: null
 
   function send(obj) {
     if (!bridge.running) return false
@@ -169,8 +171,12 @@ Item {
       onStreamFinished: {
         var cls = Model.classOf(text, root.pendingUrgent)
         var now = Date.now()
-        if (Model.shouldAlert({ enabled: root.alertBlink, cls: cls, classes: root.alertClasses,
-            openedAt: root.openedAt[root.pendingUrgent] || 0, now: now, lastAlertAt: root.lastAlertAt })) {
+        var blinked = Model.shouldAlert({ enabled: root.alertBlink, cls: cls, classes: root.alertClasses,
+            openedAt: root.openedAt[root.pendingUrgent] || 0, now: now, lastAlertAt: root.lastAlertAt })
+        root.lastUrgent = { at: new Date(now).toISOString(), address: root.pendingUrgent, class: cls, blinked: blinked,
+          openedMsAgo: root.openedAt[root.pendingUrgent] ? now - root.openedAt[root.pendingUrgent] : -1,
+          clientsBytes: String(text || "").length }
+        if (blinked) {
           root.lastAlertAt = now
           root.blink()
         }
@@ -195,6 +201,7 @@ Item {
     function status(): string {
       return JSON.stringify({ lamps: root.lamps, setup: root.setup, bridgeUp: root.bridgeUp,
         bridgeError: root.bridgeError, lastError: root.lastError, hookInstalled: root.hookInstalled,
+        lastUrgent: root.lastUrgent,
         settings: { colorSource: root.colorSource, saturationFloor: root.saturationFloor,
           alertBlink: root.alertBlink, idleAction: root.idleAction, sleepAction: root.sleepAction } })
     }
@@ -217,5 +224,7 @@ Item {
     function reload(): void { root.send({ cmd: "reload" }) }
     function discover(): void { root.send({ cmd: "discover" }) }
     function panel(): void { if (root.shell) root.shell.toggle(root.pluginId) }
+    function installHook(): void { root.installHook() }
+    function hookStatus(): string { return root.hookInstalled ? "installed" : "missing" }
   }
 }

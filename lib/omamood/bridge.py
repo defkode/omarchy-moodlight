@@ -129,6 +129,8 @@ class Bridge:
             return self.start_setup(cmd)
         if name == "setup.cancel":
             self.setup_cancel.set()
+            if self.setup.get("stage") in ("error", "done", "idle"):
+                self.set_setup(stage="idle")
             return {}
         if name == "discover":
             threading.Thread(target=self.rediscover, daemon=True).start()

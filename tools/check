@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+# Everything a change to OmaMood is held to, in one command. CI runs the same.
+# One line per check; exit 1 if any failed. A check whose tool this machine
+# lacks is skipped and says so (CI has no Omarchy shell; a laptop may lack Deno).
+set -u
+cd "$(dirname "$0")/.." || exit 1
+# A file written inside the plugin directory reloads the plugin: no bytecode.
+export PYTHONDONTWRITEBYTECODE=1
+
+failed=0
+ok()   { printf 'ok       %s\n' "$1"; }
+skip() { printf 'skipped  %s\n' "$1"; }
+fail() { printf 'FAIL     %s\n' "$1"; failed=1; }
+
+py_files=$(ls omamood lib/omamood/*.py tests/*.py)
+
+# ---- Python parses (ast, not py_compile, which writes __pycache__).
+if out=$(python3 -c 'import ast, sys
+for p in sys.argv[1:]:
+    ast.parse(open(p).read(), p)' $py_files 2>&1); then
+  ok "python syntax"
+else
+  fail "python syntax"; echo "$out"
+fi
+
+# ---- Unit tests: stdlib only (-I -S: no site-packages, like a fresh Omarchy),
+#      fake Tuya device, every profile, every pin. Resource leaks are errors.
+if out=$(python3 -B -I -S -W error::ResourceWarning -m unittest discover -s tests -p 'test_*.py' 2>&1); then
+  ok "python tests ($(echo "$out" | grep -o 'Ran [0-9]* tests'))"
+else
+  fail "python tests"; echo "$out" | tail -40
+fi
+
+# ---- The CLI starts and every profile loads.
+if out=$(./omamood profiles --json 2>&1) && echo "$out" | python3 -c 'import json,sys; assert json.load(sys.stdin)["ok"]'; then
+  ok "omamood profiles ($(echo "$out" | grep -c '"id"') profiles)"
+else
+  fail "omamood profiles"; echo "$out" | tail -20
+fi
+
+# ---- Model.js.
+if command -v deno >/dev/null 2>&1; then
+  if out=$(deno test --allow-read tests/model.test.js 2>&1); then
+    ok "Model.js tests"
+  else
+    fail "Model.js tests"; echo "$out" | tail -40
+  fi
+else
+  skip "Model.js tests: deno is not on this machine; CI runs them"
+fi
+
+# ---- No dependency Omarchy does not ship: no install commands anywhere.
+if out=$(grep -rn -I -E '(pip3? install|python3? -m venv|pipx install|uv pip|pacman -S |yay -S|paru -S|npm i(nstall)? )' \
+          --exclude-dir=.git --exclude=check . 2>/dev/null); then
+  fail "install commands found (AGENTS.md: no dependencies Omarchy does not ship)"; echo "$out"
+else
+  ok "no install commands"
+fi
+
+# ---- No bytecode in the tree.
+if [ -n "$(find . -name '__pycache__' -o -name '*.pyc' | grep -v '^./.git/')" ]; then
+  fail "bytecode in the tree"; find . -name '__pycache__' -o -name '*.pyc' | grep -v '^./.git/'
+else
+  ok "no bytecode"
+fi
+
+# ---- manifest.json: defaults, schema and the QML fallbacks agree.
+if out=$(python3 - <<'PY'
+import json, re
+m = json.load(open("manifest.json"))
+w = m["barWidget"]
+defaults = w["defaults"]
+problems = []
+schema = {s["key"]: s for s in w["schema"]}
+if set(schema) != set(defaults):
+    problems.append("schema keys %s != defaults keys %s" % (sorted(schema), sorted(defaults)))
+for k, s in schema.items():
+    if k in defaults and s.get("defaultValue") != defaults[k]:
+        problems.append("%s: schema defaultValue %r != defaults %r" % (k, s.get("defaultValue"), defaults[k]))
+qml = open("Panel.qml").read()
+for k, lit in re.findall(r'setting\("([A-Za-z]+)",\s*("[^"]*"|-?\d+|true|false)\)', qml):
+    if k not in defaults:
+        problems.append("Panel.qml reads setting %r, not in manifest defaults" % k)
+    elif json.loads(lit) != defaults[k]:
+        problems.append("Panel.qml fallback for %s is %s, manifest default %r" % (k, lit, defaults[k]))
+svc = open("Service.qml").read()
+for k, v in defaults.items():
+    mm = re.search(r'property \w+ %s: ("[^"]*"|-?\d+|true|false)' % k, svc)
+    if mm and json.loads(mm.group(1)) != v:
+        problems.append("Service.qml default for %s is %s, manifest default %r" % (k, mm.group(1), v))
+print("\n".join(problems))
+raise SystemExit(1 if problems else 0)
+PY
+); then
+  ok "manifest defaults = schema = QML fallbacks"
+else
+  fail "manifest defaults"; echo "$out"
+fi
+
+# ---- The shell's own checks, where the shell is.
+qmllint=$(command -v qmllint || ls /usr/lib/qt6/bin/qmllint 2>/dev/null || true)
+if [ -n "$qmllint" ] && [ -d /usr/share/omarchy/shell ]; then
+  if out=$("$qmllint" -I /usr/share/omarchy/shell Panel.qml Service.qml 2>&1); then
+    ok "qmllint Panel.qml Service.qml"
+  else
+    fail "qmllint"; echo "$out" | grep -v -E '\[(import|unqualified|unresolved-type)\]' | tail -20
+  fi
+else
+  skip "qmllint: no Omarchy shell on this machine"
+fi
+if command -v omarchy >/dev/null 2>&1; then
+  if out=$(omarchy plugin validate . 2>&1); then
+    ok "omarchy plugin validate"
+  else
+    fail "omarchy plugin validate"; echo "$out" | tail -20
+  fi
+else
+  skip "omarchy plugin validate: no Omarchy on this machine"
+fi
+
+if [ "$failed" -ne 0 ]; then
+  echo
+  echo "Something above failed. AGENTS.md says what each check is for."
+fi
+exit $failed
