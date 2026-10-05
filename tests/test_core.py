@@ -12,7 +12,7 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "lib"))
 
-from omamood import aes, profiles, tuya, wallpaper  # noqa: E402
+from omamood import aes, profiles, store, tuya, wallpaper  # noqa: E402
 
 
 def _read_json(path):
@@ -193,6 +193,34 @@ class PinTest(unittest.TestCase):
                         self.assertIn(k, t)
                     self.assertTrue(os.path.exists(os.path.join(root, t["pin"])), t["pin"])
                     self.assertEqual(_read_json(os.path.join(root, t["pin"]))["profile"], prof["id"])
+
+
+class StoreTest(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        self.dir = tempfile.TemporaryDirectory()
+        self.old = os.environ.get("OMAMOOD_DEVICES")
+        os.environ["OMAMOOD_DEVICES"] = os.path.join(self.dir.name, "devices.json")
+
+    def tearDown(self):
+        if self.old is None:
+            os.environ.pop("OMAMOOD_DEVICES", None)
+        else:
+            os.environ["OMAMOOD_DEVICES"] = self.old
+        self.dir.cleanup()
+
+    def test_upsert_and_remove(self):
+        store.upsert_devices([{"id": "a1", "name": "Desk", "key": "k" * 16, "ip": "10.0.0.2"},
+                              {"id": "b2", "name": "Shelf", "key": "j" * 16}])
+        self.assertEqual(os.stat(store.devices_path()).st_mode & 0o777, 0o600)
+        # A later record without an IP keeps the known one.
+        store.upsert_devices([{"id": "a1", "name": "Desk lamp", "key": "k" * 16}])
+        by_id = {d["id"]: d for d in store.load_devices()}
+        self.assertEqual((by_id["a1"]["name"], by_id["a1"]["ip"]), ("Desk lamp", "10.0.0.2"))
+        self.assertIsNone(store.remove_device("nope"))
+        self.assertEqual(store.remove_device("shelf")["id"], "b2")    # by name, any case
+        self.assertEqual(store.remove_device("a1")["id"], "a1")       # by id
+        self.assertEqual(store.load_devices(), [])
 
 
 class WallpaperTest(unittest.TestCase):

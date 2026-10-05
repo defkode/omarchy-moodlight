@@ -128,6 +128,15 @@ class Bridge:
             if self.setup.get("stage") in ("error", "done", "idle"):
                 self.set_setup(stage="idle")
             return {}
+        if name == "remove":
+            sel = cmd.get("lamp")
+            if sel in (None, "", "all"):
+                raise lamps.CommandError("remove needs one lamp (id or name)")
+            removed = store.remove_device(sel)
+            if removed is None:
+                raise lamps.CommandError("no lamp %r" % sel)
+            self.load()
+            return {"removed": removed.get("name") or removed["id"]}
         if name == "discover":
             threading.Thread(target=self.rediscover, daemon=True).start()
             return {}

@@ -32,6 +32,7 @@ Every command may carry `"id"`; the bridge then answers with a `result` line.
 | `settings` | `saturationFloor` (0-1), `sleepAction` (`off`/`none`) | |
 | `reload` | | re-read devices.json |
 | `discover` | | find IPs again, save, reload |
+| `remove` | `lamp` (required, id or name) | forget the lamp: drop it and its key from devices.json |
 | `state` | | emit a state line now |
 | `setup.qr` | `userCode` | Smart Life QR login; progress in `setup` |
 | `setup.cancel` | | stop a login; clear an error |

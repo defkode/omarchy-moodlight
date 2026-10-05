@@ -138,7 +138,7 @@ function themeCommand(colorSource) {
 
 // Validate a JSON command string from IPC. Returns {ok, cmd|error}.
 var COMMANDS = ["power", "brightness", "white", "color", "colour", "hsv", "timer", "blink", "refresh",
-  "wallpaper", "accent", "reload", "state", "discover", "setup.qr", "setup.cancel"]
+  "wallpaper", "accent", "reload", "state", "discover", "remove", "setup.qr", "setup.cancel"]
 
 function parseCommand(json) {
   var cmd

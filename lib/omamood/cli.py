@@ -243,6 +243,28 @@ def draft_profile(status):
             "dps": dps, "write": {"onePerMessage": True, "modeLast": True}, "tested": []}
 
 
+def cmd_remove(args):
+    """Forget a lamp: drop it from devices.json (its key with it)."""
+    target = args.name or (args.lamp if args.lamp != "all" else None)
+    if not target:
+        return _err(args, "say which lamp: omamood remove NAME", 2)
+    if shell_running():
+        res = shell_call("command", json.dumps({"cmd": "remove", "lamp": target}))
+        if res != "ok":
+            return _err(args, res or "shell call failed")
+        time.sleep(0.3)
+        left = [l["name"] for l in json.loads(shell_call("status") or "{}").get("lamps", [])]
+        if any(n.lower() == target.lower() for n in left):
+            return _err(args, "no lamp %r" % target)
+    else:
+        if store.remove_device(target) is None:
+            return _err(args, "no lamp %r" % target)
+        left = [d.get("name") for d in store.load_devices()]
+    _out(args, {"ok": True, "removed": target, "lamps": left},
+         "removed %s; left: %s" % (target, ", ".join(left) or "none"))
+    return 0
+
+
 def cmd_discover(args):
     recs = store.load_devices()
     if not recs:
@@ -336,6 +358,8 @@ def parser():
     sub.add_parser("devices", help="configured lamps").add_argument("--show-keys", action="store_true")
     sub.add_parser("profiles", help="known device profiles")
     sub.add_parser("discover", help="find the lamps' IP addresses again")
+    s = sub.add_parser("remove", help="forget a lamp (its key is deleted)")
+    s.add_argument("name", nargs="?", help="lamp name or id")
     s = sub.add_parser("probe", help="dump a device's raw data points (adding a device)")
     for f in ("--id", "--key", "--ip"):
         s.add_argument(f)
@@ -372,7 +396,7 @@ def main(argv):
         if args.action == "setup":
             return cmd_setup_qr(args) if args.how == "qr" else cmd_setup_manual(args)
         return {"status": cmd_status, "devices": cmd_devices, "profiles": cmd_profiles,
-                "probe": cmd_probe, "discover": cmd_discover}[args.action](args)
+                "probe": cmd_probe, "discover": cmd_discover, "remove": cmd_remove}[args.action](args)
     except SystemExit as e:
         if e.code == 3:
             return _err(args, "no lamps configured: run `omamood setup qr`", 3)

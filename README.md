@@ -48,7 +48,8 @@ Already have a local key (e.g. from `tinytuya wizard`)?
 - **Bar icon:** click for the panel, right-click to toggle, scroll for brightness.
   The bulb takes the lamp's colour.
 - **Panel:** per lamp power, brightness, White / Colour, your theme's colours as
-  swatches, the current wallpaper's colour; what happens on theme change. Keys: `Space` toggles, `←/→` brightness, `Esc` closes.
+  swatches, the current wallpaper's colour; what happens on theme change.
+  **Manage lamps** adds lamps (QR) or removes them (Remove → Confirm?). Keys: `Space` toggles, `←/→` brightness, `Esc` closes.
 - **Theme change:** lamps that are on take the new wallpaper's main colour (or the
   theme accent). Muted palettes are made more saturated so they still read as a
   colour on an LED; grey wallpapers give white.
@@ -75,6 +76,7 @@ omamood status
 omamood color orange --brightness 40
 omamood blink --color '#00ff00'          # e.g. at the end of a long job: make && omamood blink
 omamood timer 30
+omamood remove "Desk lamp"               # forget a lamp and its key
 omamood status --json                    # for scripts and AI agents
 ```
 

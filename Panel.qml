@@ -24,6 +24,8 @@ Panel {
   readonly property bool settingUp: ["requesting", "scan", "fetching", "locating"].indexOf(setupState.stage) >= 0
   readonly property bool showSetup: lamps.length === 0 || setupOpen || settingUp || setupState.stage === "error"
   property bool setupOpen: false
+  // Removing the last lamp hides the footer with "Done": leave manage mode then.
+  onLampsChanged: if (lamps.length === 0) setupOpen = false
   property var palette: ({})
   readonly property color fg: bar ? bar.foreground : Color.foreground
   readonly property color dim: Qt.darker(fg, 1.5)
@@ -150,19 +152,22 @@ Panel {
           Column {
             id: lampCard
             required property var modelData
-            readonly property bool usable: modelData.online && modelData.on
+            // In manage mode a lamp shows only its name and a Remove button.
+            readonly property bool usable: modelData.online && modelData.on && !root.setupOpen
+            property bool confirming: false
             width: column.width
             spacing: Style.space(8)
 
             Item {
               width: parent.width
               implicitHeight: Math.max(lampName.implicitHeight + lampLine.implicitHeight, power.implicitHeight)
+              readonly property Item side: root.setupOpen ? removeButton : power
 
               Text {
                 id: lampName
                 textFormat: Text.PlainText
                 anchors.left: parent.left
-                anchors.right: power.left
+                anchors.right: parent.side.left
                 anchors.top: parent.top
                 text: lampCard.modelData.name
                 color: root.fg
@@ -175,7 +180,7 @@ Panel {
                 id: lampLine
                 textFormat: Text.PlainText
                 anchors.left: parent.left
-                anchors.right: power.left
+                anchors.right: parent.side.left
                 anchors.top: lampName.bottom
                 text: Model.lampLine(lampCard.modelData)
                 color: root.dim
@@ -185,12 +190,36 @@ Panel {
               }
               ToggleSwitch {
                 id: power
+                visible: !root.setupOpen
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 checked: lampCard.modelData.on === true
                 interactive: lampCard.modelData.online
                 foreground: root.fg
                 onToggled: root.cmd({ cmd: "power", lamp: lampCard.modelData.id, value: checked ? "off" : "on" })
+              }
+              // Two clicks: "Remove", then "Confirm?" within 3 s. Forgets the lamp
+              // and its key; adding it back takes a QR scan.
+              Button {
+                id: removeButton
+                visible: root.setupOpen
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                text: lampCard.confirming ? "Confirm?" : "Remove"
+                bordered: true
+                foreground: lampCard.confirming ? Color.urgent : root.fg
+                fontFamily: root.fontFamily
+                fontSize: Style.font.caption
+                onClicked: {
+                  if (!lampCard.confirming) { lampCard.confirming = true; confirmTimer.restart(); return }
+                  lampCard.confirming = false
+                  root.cmd({ cmd: "remove", lamp: lampCard.modelData.id })
+                }
+              }
+              Timer {
+                id: confirmTimer
+                interval: 3000
+                onTriggered: lampCard.confirming = false
               }
             }
 
@@ -401,7 +430,7 @@ Panel {
           visible: root.lamps.length > 0
 
           Button {
-            text: root.showSetup ? "Done" : "Add lamps"
+            text: root.setupOpen ? "Done" : "Manage lamps"
             foreground: root.fg
             fontFamily: root.fontFamily
             fontSize: Style.font.caption

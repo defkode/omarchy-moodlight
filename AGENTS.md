@@ -30,6 +30,7 @@ $P wallpaper [--force]                 # colour from the current wallpaper (skip
 $P blink --color '#ff0000' --count 3   # flash, then restore exactly
 $P timer 30                            # off in 30 min (0 cancels)
 $P devices --json | profiles --json | discover | probe --lamp NAME --json
+$P remove NAME                         # forget a lamp and its key (ask the user first)
 ```
 
 When the shell is running the CLI goes through it (`"via": "shell"`), so the bar

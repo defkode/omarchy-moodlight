@@ -63,6 +63,19 @@ def save_devices(devices):
     _write_private(devices_path(), {"version": 1, "devices": clean})
 
 
+def remove_device(selector):
+    """Remove one lamp by id or name (case-insensitive). Returns the removed
+    record, or None if nothing matched."""
+    devices = load_devices()
+    sel = str(selector).lower()
+    for i, d in enumerate(devices):
+        if sel in (d["id"].lower(), str(d.get("name", "")).lower()):
+            removed = devices.pop(i)
+            save_devices(devices)
+            return removed
+    return None
+
+
 def upsert_devices(new):
     """Merge by id: new fields win, fields the new record lacks (e.g. ip) are kept."""
     by_id = {d["id"]: d for d in load_devices()}
