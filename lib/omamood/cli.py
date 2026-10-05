@@ -249,13 +249,14 @@ def cmd_remove(args):
     if not target:
         return _err(args, "say which lamp: omamood remove NAME", 2)
     if shell_running():
+        before = json.loads(shell_call("status") or "{}").get("lamps", [])
+        if not any(target.lower() in (l["id"].lower(), str(l["name"]).lower()) for l in before):
+            return _err(args, "no lamp %r (have: %s)" % (target, ", ".join(l["name"] for l in before) or "none"))
         res = shell_call("command", json.dumps({"cmd": "remove", "lamp": target}))
         if res != "ok":
             return _err(args, res or "shell call failed")
         time.sleep(0.3)
         left = [l["name"] for l in json.loads(shell_call("status") or "{}").get("lamps", [])]
-        if any(n.lower() == target.lower() for n in left):
-            return _err(args, "no lamp %r" % target)
     else:
         if store.remove_device(target) is None:
             return _err(args, "no lamp %r" % target)
