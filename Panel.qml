@@ -190,6 +190,7 @@ Panel {
               font.bold: true
             }
             Text {
+              visible: text !== ""
               textFormat: Text.PlainText
               width: parent.width
               text: root.service && root.service.bridgeError !== "" ? root.service.bridgeError
@@ -241,33 +242,39 @@ Panel {
 
             Item {
               width: parent.width
-              implicitHeight: Math.max(lampName.implicitHeight + lampLine.implicitHeight, power.implicitHeight)
+              implicitHeight: Math.max(lampText.implicitHeight, power.implicitHeight)
               readonly property Item side: root.setupOpen ? removeButton : power
 
-              Text {
-                id: lampName
-                textFormat: Text.PlainText
+              // Name, and a status line only when there is news; centred
+              // against the power switch.
+              Column {
+                id: lampText
                 anchors.left: parent.left
                 anchors.right: parent.side.left
-                anchors.top: parent.top
-                text: lampCard.modelData.name
-                color: root.fg
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.body
-                font.bold: true
-                elide: Text.ElideRight
-              }
-              Text {
-                id: lampLine
-                textFormat: Text.PlainText
-                anchors.left: parent.left
-                anchors.right: parent.side.left
-                anchors.top: lampName.bottom
-                text: Model.lampLine(lampCard.modelData)
-                color: root.dim
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.caption
-                elide: Text.ElideRight
+                anchors.rightMargin: Style.space(8)
+                anchors.verticalCenter: parent.verticalCenter
+                Text {
+                  id: lampName
+                  textFormat: Text.PlainText
+                  width: parent.width
+                  text: lampCard.modelData.name
+                  color: root.fg
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.body
+                  font.bold: true
+                  elide: Text.ElideRight
+                }
+                Text {
+                  id: lampLine
+                  textFormat: Text.PlainText
+                  width: parent.width
+                  text: Model.lampLine(lampCard.modelData)
+                  visible: text !== ""
+                  color: root.dim
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.caption
+                  elide: Text.ElideRight
+                }
               }
               ToggleSwitch {
                 id: power
@@ -306,11 +313,13 @@ Panel {
 
             PanelSectionHeader {
               visible: lampCard.usable
-              text: "Brightness"
+              // Follows the slider while dragging.
+              text: "Brightness · " + Math.round(brightnessSlider.liveValue) + "%"
               foreground: root.dim
             }
 
             PanelSlider {
+              id: brightnessSlider
               width: parent.width
               visible: lampCard.usable
               bar: root.bar

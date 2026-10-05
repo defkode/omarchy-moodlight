@@ -39,12 +39,16 @@ Deno.test("hsvToHex", () => {
 
 Deno.test("summary lines", () => {
   assertEquals(M.summary([], null), "No lamps yet")
-  assertEquals(M.summary([lamp()], null), "Colour · 76%")
-  assertEquals(M.summary([lamp({ on: false })], null), "Off")
+  assertEquals(M.summary([lamp()], null), "")                          // one lamp: the card says it
+  assertEquals(M.summary([lamp({ on: false })], null), "")
   assertEquals(M.summary([lamp({ online: false })], null), "Offline")
   assertEquals(M.summary([lamp(), lamp({ on: false })], null), "1 of 2 on")
   assertEquals(M.summary([lamp()], { stage: "scan" }), "Scan with Smart Life, then tap Confirm login")
-  assertEquals(M.lampLine(lamp({ mode: "white", brightness: 40, timer: 600 })), "White · 40% · off in 10 min")
+  assertEquals(M.lampLine(lamp()), "")                                 // on: nothing to add
+  assertEquals(M.lampLine(lamp({ on: false })), "Off")
+  assertEquals(M.lampLine(lamp({ online: false, error: "timed out" })), "Offline · timed out")
+  assertEquals(M.lampLine(lamp({ timer: 600 })), "Off in 10 min")
+  assertEquals(M.tooltip([lamp(), lamp({ name: "Desk", on: false })]), "Moodlight · 76%\nDesk · off")
 })
 
 Deno.test("discovery label", () => {

@@ -64,13 +64,13 @@ function hsvToHex(h, s, v) {
   }).join("")
 }
 
+// The line under a lamp's name: only news. "" for a lamp that is simply on
+// (the switch and the brightness label already say so).
 function lampLine(l) {
   if (!l.online) return l.error ? "Offline · " + l.error : "Offline"
   if (!l.on) return "Off"
-  var parts = [l.mode === "colour" ? "Colour" : l.mode === "white" ? "White" : String(l.mode || "On")]
-  if (l.brightness !== null && l.brightness !== undefined) parts.push(l.brightness + "%")
-  if (l.timer) parts.push("off in " + Math.ceil(l.timer / 60) + " min")
-  return parts.join(" · ")
+  if (l.timer) return "Off in " + Math.ceil(l.timer / 60) + " min"
+  return ""
 }
 
 function summary(lamps, setup) {
@@ -79,13 +79,17 @@ function summary(lamps, setup) {
   var on = 0, online = onlineCount(lamps)
   for (var i = 0; i < lamps.length; i++) if (lamps[i].online && lamps[i].on) on++
   if (online === 0) return lamps.length === 1 ? "Offline" : "All offline"
-  if (lamps.length === 1) return lampLine(lamps[0])
+  // One lamp: its card says it all. Several: how many are on.
+  if (lamps.length === 1) return ""
   return on + " of " + lamps.length + " on"
 }
 
 function tooltip(lamps) {
   if (!lamps || lamps.length === 0) return "OmaMood: add a lamp"
-  return lamps.map(function(l) { return l.name + ": " + lampLine(l) }).join("\n")
+  return lamps.map(function(l) {
+    var state = !l.online ? "offline" : !l.on ? "off" : (l.brightness !== null && l.brightness !== undefined ? l.brightness + "%" : "on")
+    return l.name + " · " + state
+  }).join("\n")
 }
 
 function stageLabel(setup) {
