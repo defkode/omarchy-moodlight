@@ -8,7 +8,6 @@ var GLYPH_ON = String.fromCodePoint(0xF06E8)     // nf-md-lightbulb_on
 var GLYPH_OFF = String.fromCodePoint(0xF0336)    // nf-md-lightbulb_outline
 var GLYPH_NONE = String.fromCodePoint(0xF0335)   // nf-md-lightbulb
 
-var DEFAULT_ALERT_CLASSES = "com.mitchellh.ghostty,Alacritty,kitty,foot,org.wezfurlong.wezterm"
 var PALETTE_KEYS = ["accent", "red", "yellow", "green", "cyan", "blue", "magenta"]
 
 // One stdout line from the bridge -> object, or null if it is not ours.
@@ -101,41 +100,6 @@ function stageLabel(setup) {
   }
 }
 
-// Terminal-alert filtering. `cls` is the urgent window's class; `classes` the
-// comma-separated setting ("*" = any window). Ghostty also asks for attention
-// when a window first opens: urgency within `graceMs` of opening is ignored.
-function isAlertClass(cls, classes) {
-  var list = String(classes || DEFAULT_ALERT_CLASSES).split(",").map(function(s) { return s.trim() })
-  if (list.indexOf("*") >= 0) return true
-  return list.indexOf(String(cls || "")) >= 0
-}
-
-function shouldAlert(opts) {
-  // opts: {enabled, cls, classes, openedAt, now, lastAlertAt, graceMs, cooldownMs}
-  if (!opts.enabled) return false
-  if (!isAlertClass(opts.cls, opts.classes)) return false
-  var now = opts.now
-  if (opts.openedAt && now - opts.openedAt < (opts.graceMs || 2500)) return false
-  if (opts.lastAlertAt && now - opts.lastAlertAt < (opts.cooldownMs || 5000)) return false
-  return true
-}
-
-// Hyprland raw event data "ADDRESS" or "ADDRESS,..." -> "0xADDRESS".
-function eventAddress(data) {
-  var a = String(data || "").split(",")[0].trim()
-  if (a === "") return ""
-  return a.indexOf("0x") === 0 ? a : "0x" + a
-}
-
-// `hyprctl clients -j` output -> class of the window with this address.
-function classOf(clientsJson, address) {
-  try {
-    var list = JSON.parse(clientsJson)
-    for (var i = 0; i < list.length; i++) if (list[i].address === address) return list[i]["class"] || ""
-  } catch (e) {}
-  return ""
-}
-
 // colors.toml -> {accent: "#..", red: "#..", ...}; tolerant line parser.
 function parseColorsToml(text) {
   var out = {}
@@ -156,13 +120,11 @@ function swatches(palette) {
   return out
 }
 
-// Settings pushed to the bridge (it applies saturation/idle/sleep policy).
+// Settings pushed to the bridge (it applies the saturation and sleep policy).
 function bridgeSettings(s) {
   return {
     cmd: "settings",
     saturationFloor: Math.max(0, Math.min(100, Number(s.saturationFloor))) / 100,
-    idleAction: ["none", "dim", "off"].indexOf(s.idleAction) >= 0 ? s.idleAction : "none",
-    idleBrightness: 10,
     sleepAction: s.sleepAction === "none" ? "none" : "off"
   }
 }
@@ -176,7 +138,7 @@ function themeCommand(colorSource) {
 
 // Validate a JSON command string from IPC. Returns {ok, cmd|error}.
 var COMMANDS = ["power", "brightness", "white", "color", "colour", "hsv", "timer", "blink", "refresh",
-  "wallpaper", "accent", "idle", "reload", "state", "discover", "setup.qr", "setup.cancel"]
+  "wallpaper", "accent", "reload", "state", "discover", "setup.qr", "setup.cancel"]
 
 function parseCommand(json) {
   var cmd

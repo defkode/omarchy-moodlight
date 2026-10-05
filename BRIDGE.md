@@ -29,8 +29,7 @@ Every command may carry `"id"`; the bridge then answers with a `result` line.
 | `wallpaper` | `path`?, `force`? | colour from the wallpaper; skips lamps that are off unless `force` |
 | `accent` | `force`? | colour from the theme accent |
 | `refresh` | | re-read the lamp's DPs |
-| `idle` | `value`: bool | apply / undo `idleAction` |
-| `settings` | `saturationFloor` (0-1), `idleAction` (`none`/`dim`/`off`), `idleBrightness`, `sleepAction` (`off`/`none`) | |
+| `settings` | `saturationFloor` (0-1), `sleepAction` (`off`/`none`) | |
 | `reload` | | re-read devices.json |
 | `discover` | | find IPs again, save, reload |
 | `state` | | emit a state line now |

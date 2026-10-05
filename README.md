@@ -2,9 +2,8 @@
 
 Your Tuya Wi-Fi lamp in the [Omarchy](https://omarchy.org) bar. Power,
 brightness and colour from the panel or keys; the lamp follows your wallpaper
-when you change themes, blinks when a terminal in the background rings its bell
-(a finished build, an AI agent waiting for you), and can dim when you're away
-or switch off while the computer sleeps.
+when you change themes, and switches off while the computer sleeps and comes
+back as it was when it wakes.
 
 - **Local.** Commands go straight to the lamp over your LAN. The cloud is used
   once, to fetch the lamp's key, and the session is logged out right after.
@@ -49,13 +48,12 @@ Already have a local key (e.g. from `tinytuya wizard`)?
 - **Bar icon:** click for the panel, right-click to toggle, scroll for brightness.
   The bulb takes the lamp's colour.
 - **Panel:** per lamp power, brightness, White / Colour, your theme's colours as
-  swatches, the current wallpaper's colour; what happens on theme change; the
-  terminal blink. Keys: `Space` toggles, `←/→` brightness, `Esc` closes.
+  swatches, the current wallpaper's colour; what happens on theme change. Keys: `Space` toggles, `←/→` brightness, `Esc` closes.
 - **Theme change:** lamps that are on take the new wallpaper's main colour (or the
   theme accent). Muted palettes are made more saturated so they still read as a
   colour on an LED; grey wallpapers give white.
-- **Terminal alert:** when a terminal on another workspace rings its bell, the lamp
-  flashes three times in the theme's urgent colour and goes back to exactly what it was.
+- **Sleep:** lamps switch off before the computer suspends and return to exactly
+  what they were after it wakes (`sleepAction`).
 
 ### Keybindings
 
@@ -88,11 +86,6 @@ In the panel, or `omarchy bar set io.github.defkode.omamood <key> <value>`:
 |:--|:--|:--|
 | `colorSource` | `wallpaper` | `wallpaper`, `accent` or `off` on theme change |
 | `saturationFloor` | `70` | minimum saturation (%) for theme colours |
-| `alertBlink` | `true` | blink on terminal bells |
-| `alertClasses` | Ghostty, Alacritty, kitty, foot, WezTerm | window classes that may blink; `*` = any |
-| `alertColor` | theme urgent | `#rrggbb` |
-| `idleAction` | `none` | `dim` or `off` when you're away |
-| `idleSeconds` | `300` | |
 | `sleepAction` | `off` | turn lamps off before suspend, restore after; `none` to leave them |
 | `tintIcon` | `true` | colour the bar icon |
 
@@ -116,8 +109,6 @@ protocol 3.4/3.5 are not supported yet.
   network (not a guest network). Firewalls are fine: OmaMood only makes outgoing
   connections.
 - **Doesn't follow themes:** panel shows "Theme hook not installed" → **Install**.
-- **No blink:** the terminal must be on another workspace (a focused window
-  isn't "urgent"), and its class in `alertClasses` (`hyprctl clients`).
 - **Logs:** `journalctl -t omarchy-shell | grep -i omamood`, and
   `omarchy-shell omamood status | python3 -m json.tool`.
 

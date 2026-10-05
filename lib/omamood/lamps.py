@@ -169,7 +169,7 @@ class Lamp:
         """Flash `count` times with instant changes, then restore exactly."""
         h, s, v = parse_colour(colour)
         if s >= 0.08:
-            s = max(s, 0.8)     # a theme's muted "urgent" still has to read as an alert
+            s = max(s, 0.8)     # a muted colour still has to read as a flash
         on_msg = self.light.realtime(h, s, max(v, 0.6))
         saved = dict(self.status)
         if on_msg is None:

@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "io.github.defkode.omamood",
   "name": "OmaMood",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "defkode",
   "license": "MIT",
-  "description": "Tuya Wi-Fi lamps in the Omarchy bar, over your LAN: power, brightness and colour; the lamp follows your wallpaper or theme accent, blinks when a terminal rings its bell, and dims when you're away. One QR scan with the Smart Life app sets it up; no developer account, no cloud after setup.",
+  "description": "Tuya Wi-Fi lamps in the Omarchy bar, over your LAN: power, brightness and colour; the lamp follows your wallpaper or theme accent and switches off while the computer sleeps. One QR scan with the Smart Life app sets it up; no developer account, no cloud after setup.",
   "kinds": [
     "service",
     "bar-widget"
@@ -36,11 +36,6 @@
     "defaults": {
       "colorSource": "wallpaper",
       "saturationFloor": 70,
-      "alertBlink": true,
-      "alertClasses": "com.mitchellh.ghostty,Alacritty,kitty,foot,org.wezfurlong.wezterm",
-      "alertColor": "",
-      "idleAction": "none",
-      "idleSeconds": 300,
       "sleepAction": "off",
       "tintIcon": true
     },
@@ -49,7 +44,11 @@
         "key": "colorSource",
         "type": "enum",
         "label": "On theme change, colour the lamp from",
-        "options": ["wallpaper", "accent", "off"],
+        "options": [
+          "wallpaper",
+          "accent",
+          "off"
+        ],
         "defaultValue": "wallpaper",
         "description": "Needs the theme hook (the panel offers to install it). Lamps that are off stay off."
       },
@@ -64,47 +63,13 @@
         "description": "Muted palettes look white on an LED; this lifts them while keeping the hue. Greys always become white."
       },
       {
-        "key": "alertBlink",
-        "type": "boolean",
-        "label": "Blink when a terminal rings its bell",
-        "defaultValue": true,
-        "description": "When a terminal in the background asks for attention (a finished build, an AI agent waiting for you), the lamp flashes three times and returns to what it was."
-      },
-      {
-        "key": "alertClasses",
-        "type": "string",
-        "label": "Window classes that may trigger the blink",
-        "defaultValue": "com.mitchellh.ghostty,Alacritty,kitty,foot,org.wezfurlong.wezterm",
-        "description": "Comma-separated Hyprland window classes; * for any window."
-      },
-      {
-        "key": "alertColor",
-        "type": "string",
-        "label": "Blink colour (#rrggbb)",
-        "defaultValue": "",
-        "description": "Empty: the theme's urgent colour."
-      },
-      {
-        "key": "idleAction",
-        "type": "enum",
-        "label": "When you're away",
-        "options": ["none", "dim", "off"],
-        "defaultValue": "none"
-      },
-      {
-        "key": "idleSeconds",
-        "type": "integer",
-        "label": "Away after (seconds)",
-        "min": 30,
-        "max": 7200,
-        "step": 30,
-        "defaultValue": 300
-      },
-      {
         "key": "sleepAction",
         "type": "enum",
         "label": "When the computer sleeps",
-        "options": ["off", "none"],
+        "options": [
+          "off",
+          "none"
+        ],
         "defaultValue": "off",
         "description": "off: lamps turn off before suspend and come back as they were after resume."
       },

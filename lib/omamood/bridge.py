@@ -40,9 +40,7 @@ class Bridge:
         self.workers = {}
         self.setup = {"stage": "idle"}
         self.setup_cancel = threading.Event()
-        self.settings = {"saturationFloor": 0.7, "sleepAction": "off", "idleAction": "none",
-                         "idleBrightness": 10}
-        self.idle_snapshot = None
+        self.settings = {"saturationFloor": 0.7, "sleepAction": "off"}
         self.sleep_snapshot = None
 
     # ---- output ----
@@ -114,8 +112,6 @@ class Bridge:
             return {"lamps": [w.lamp.name for w in ws]}
         if name in ("wallpaper", "accent", "themeColor"):
             return self.theme_colour(cmd)
-        if name == "idle":
-            return self.idle(bool(cmd.get("value")))
         if name == "settings":
             self.settings.update({k: v for k, v in cmd.items() if k not in ("cmd", "id")})
             return {"settings": self.settings}
@@ -157,25 +153,6 @@ class Bridge:
             w.submit({"cmd": "hsv", "value": [h, s, 1.0]})
             sent.append(w.lamp.name)
         return {"source": colour, "lamps": sent}
-
-    def idle(self, idle):
-        action = self.settings.get("idleAction", "none")
-        if action == "none":
-            return {}
-        if idle and self.idle_snapshot is None:
-            self.idle_snapshot = {lid: dict(w.lamp.status) for lid, w in self.workers.items() if w.lamp.online}
-            for w in self.workers.values():
-                if w.lamp.online and w.lamp.state().get("on"):
-                    if action == "off":
-                        w.submit({"cmd": "power", "value": "off"})
-                    else:
-                        w.submit({"cmd": "brightness", "value": self.settings.get("idleBrightness", 10)})
-        elif not idle and self.idle_snapshot is not None:
-            snap, self.idle_snapshot = self.idle_snapshot, None
-            for lid, status in snap.items():
-                if lid in self.workers:
-                    self.workers[lid].submit({"cmd": "restore", "status": status})
-        return {}
 
     def sleep(self, going):
         if self.settings.get("sleepAction", "off") != "off":

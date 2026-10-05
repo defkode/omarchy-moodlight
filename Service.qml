@@ -1,8 +1,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
-import Quickshell.Wayland
 import qs.Commons
 import "Model.js" as Model
 
@@ -16,9 +14,7 @@ import "Model.js" as Model
 //                  and AI agents call (`omarchy-shell omamood toggle`).
 //   theme follow   the theme-set hook calls themeChanged(); we ask the bridge
 //                  for the wallpaper's or accent's colour.
-//   alert blink    Hyprland marks a background terminal urgent when it rings
-//                  its bell; matching terminals make the lamp flash.
-//   idle           IdleMonitor; the bridge dims or switches off, then restores.
+// Suspend/resume is handled inside the bridge (logind PrepareForSleep).
 Item {
   id: root
 
@@ -35,11 +31,6 @@ Item {
   //      match manifest.json's barWidget.defaults and Panel.qml's fallbacks.
   property string colorSource: "wallpaper"
   property int saturationFloor: 70
-  property bool alertBlink: true
-  property string alertClasses: Model.DEFAULT_ALERT_CLASSES
-  property string alertColor: ""
-  property string idleAction: "none"
-  property int idleSeconds: 300
   property string sleepAction: "off"
 
   // ---- State from the bridge.
@@ -51,13 +42,6 @@ Item {
   property int restartDelay: 0
   property bool hookInstalled: false
 
-  // Terminal alerts: when each window opened (Ghostty asks for attention on open).
-  property var openedAt: ({})
-  property real lastAlertAt: 0
-  property string pendingUrgent: ""
-  // The last urgent window considered, for `status` (debugging, agents).
-  property var lastUrgent: null
-
   function send(obj) {
     if (!bridge.running) return false
     bridge.write(JSON.stringify(obj) + "\n")
@@ -65,12 +49,10 @@ Item {
   }
 
   function pushSettings() {
-    send(Model.bridgeSettings({ saturationFloor: root.saturationFloor, idleAction: root.idleAction,
-      sleepAction: root.sleepAction }))
+    send(Model.bridgeSettings({ saturationFloor: root.saturationFloor, sleepAction: root.sleepAction }))
   }
 
   onSaturationFloorChanged: pushSettings()
-  onIdleActionChanged: pushSettings()
   onSleepActionChanged: pushSettings()
 
   function applyLine(line) {
@@ -93,8 +75,7 @@ Item {
   }
 
   function blink() {
-    var colour = root.alertColor !== "" ? root.alertColor : String(Color.urgent)
-    send({ cmd: "blink", color: colour, count: 3 })
+    send({ cmd: "blink", color: String(Color.urgent), count: 3 })
   }
 
   function installHook() {
@@ -142,61 +123,6 @@ Item {
 
   Component.onCompleted: hookCheck.running = true
 
-  // ---- Terminal alerts.
-  Connections {
-    target: Hyprland
-    function onRawEvent(event) {
-      if (!event || !event.name) return
-      var name = String(event.name)
-      if (name === "openwindow") {
-        var opened = root.openedAt
-        opened[Model.eventAddress(event.data)] = Date.now()
-        root.openedAt = opened
-      } else if (name === "closewindow") {
-        var closed = root.openedAt
-        delete closed[Model.eventAddress(event.data)]
-        root.openedAt = closed
-      } else if (name === "urgent" && root.alertBlink && root.lamps.length > 0 && !clients.running) {
-        root.pendingUrgent = Model.eventAddress(event.data)
-        clients.running = true
-      }
-    }
-  }
-
-  Process {
-    id: clients
-    command: ["hyprctl", "clients", "-j"]
-    stdout: StdioCollector {
-      waitForEnd: true
-      onStreamFinished: {
-        var cls = Model.classOf(text, root.pendingUrgent)
-        var now = Date.now()
-        var blinked = Model.shouldAlert({ enabled: root.alertBlink, cls: cls, classes: root.alertClasses,
-            openedAt: root.openedAt[root.pendingUrgent] || 0, now: now, lastAlertAt: root.lastAlertAt })
-        root.lastUrgent = { at: new Date(now).toISOString(), address: root.pendingUrgent, class: cls, blinked: blinked,
-          openedMsAgo: root.openedAt[root.pendingUrgent] ? now - root.openedAt[root.pendingUrgent] : -1,
-          clientsBytes: String(text || "").length }
-        if (blinked) {
-          root.lastAlertAt = now
-          root.blink()
-        }
-      }
-    }
-  }
-
-  // ---- Away.
-  property string lastIdleChange: ""
-  IdleMonitor {
-    id: idleMonitor
-    enabled: root.idleAction !== "none" && root.lamps.length > 0
-    timeout: Math.max(30, root.idleSeconds)
-    respectInhibitors: true
-    onIsIdleChanged: {
-      root.lastIdleChange = new Date().toISOString() + " " + (isIdle ? "idle" : "active")
-      root.send({ cmd: "idle", value: isIdle })
-    }
-  }
-
   // ---- IPC: `omarchy-shell omamood <method> [args]`. Lamp verbs act on every
   //      lamp; `command` takes any bridge command as JSON (BRIDGE.md).
   IpcHandler {
@@ -206,11 +132,8 @@ Item {
     function status(): string {
       return JSON.stringify({ lamps: root.lamps, setup: root.setup, bridgeUp: root.bridgeUp,
         bridgeError: root.bridgeError, lastError: root.lastError, hookInstalled: root.hookInstalled,
-        lastUrgent: root.lastUrgent,
-        idle: { enabled: idleMonitor.enabled, timeout: idleMonitor.timeout, isIdle: idleMonitor.isIdle,
-          lastChange: root.lastIdleChange },
         settings: { colorSource: root.colorSource, saturationFloor: root.saturationFloor,
-          alertBlink: root.alertBlink, idleAction: root.idleAction, sleepAction: root.sleepAction } })
+          sleepAction: root.sleepAction } })
     }
     function command(json: string): string {
       var parsed = Model.parseCommand(json)

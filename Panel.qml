@@ -40,11 +40,6 @@ Panel {
   // ---- Settings into the service. Fallbacks = manifest.json defaults.
   Binding { target: root.service; when: root.service !== null; property: "colorSource"; value: String(root.setting("colorSource", "wallpaper")) }
   Binding { target: root.service; when: root.service !== null; property: "saturationFloor"; value: Number(root.setting("saturationFloor", 70)) }
-  Binding { target: root.service; when: root.service !== null; property: "alertBlink"; value: root.setting("alertBlink", true) !== false }
-  Binding { target: root.service; when: root.service !== null; property: "alertClasses"; value: String(root.setting("alertClasses", Model.DEFAULT_ALERT_CLASSES)) }
-  Binding { target: root.service; when: root.service !== null; property: "alertColor"; value: String(root.setting("alertColor", "")) }
-  Binding { target: root.service; when: root.service !== null; property: "idleAction"; value: String(root.setting("idleAction", "none")) }
-  Binding { target: root.service; when: root.service !== null; property: "idleSeconds"; value: Number(root.setting("idleSeconds", 300)) }
   Binding { target: root.service; when: root.service !== null; property: "sleepAction"; value: String(root.setting("sleepAction", "off")) }
 
   // ---- Theme palette for the swatches; re-read when the theme changes.
@@ -305,16 +300,6 @@ Panel {
               onClicked: root.service.installHook()
             }
           }
-
-          Toggle {
-            width: parent.width
-            label: "Blink on terminal alerts"
-            description: "A background terminal ringing its bell flashes the lamp."
-            checked: root.setting("alertBlink", true) !== false
-            foreground: root.fg
-            fontFamily: root.fontFamily
-            onClicked: root.setSetting("alertBlink", !checked)
-          }
         }
 
         // ---------- Setup
@@ -428,13 +413,6 @@ Panel {
             fontFamily: root.fontFamily
             fontSize: Style.font.caption
             onClicked: root.cmd({ cmd: "discover" })
-          }
-          Button {
-            text: "Test blink"
-            foreground: root.fg
-            fontFamily: root.fontFamily
-            fontSize: Style.font.caption
-            onClicked: if (root.service) root.service.blink()
           }
         }
       }

@@ -12,7 +12,7 @@ Nedis, Gosund, no-name), controlled over the LAN:
 - `lib/omamood/` — the Python package (see the table below).
 - `devices/*.json` — **device profiles**: which Tuya data point (DP) means what. Adding a
   lamp is usually one JSON file and one pin; see `docs/ADDING_DEVICES.md`.
-- `Service.qml` (once per session: bridge process, IPC, theme hook, alert blink, idle),
+- `Service.qml` (once per session: bridge process, IPC, theme hook),
   `Panel.qml` (bar icon + panel, once per monitor), `Model.js` (pure logic, Deno-tested).
 
 ## Driving it (no code changes needed)
@@ -37,8 +37,7 @@ stays in sync; otherwise it talks to the lamps directly (`"via": "direct"`).
 The shell side is also reachable on its own: `omarchy-shell omamood status`,
 `omarchy-shell omamood command '<json>'` with any command from `BRIDGE.md`,
 and verbs `toggle on off brighter dimmer white color wallpaper accent blink
-reload discover panel installHook hookStatus ping`. `status` includes
-`lastUrgent`: the last terminal alert considered and whether it blinked.
+reload discover panel installHook hookStatus ping`.
 
 Exit codes: 0 ok, 1 failed, 2 usage, 3 no lamps configured, 4 environment
 (missing tool, unsupported protocol).
@@ -85,10 +84,6 @@ omarchy-shell omamood status | python3 -m json.tool
 
 Before testing a theme change, note `omarchy theme current` and the wallpaper
 (`readlink ~/.local/state/omarchy/current/background`) and restore both after.
-To test the terminal blink, ring a bell in a terminal on a workspace other than
-the active one (`hyprctl activeworkspace`), opened from the user's existing
-Ghostty (a fresh `--gtk-single-instance=false` process does not request
-attention the same way).
 
 ## Where things are
 
