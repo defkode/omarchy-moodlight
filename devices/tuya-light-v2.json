@@ -1,0 +1,23 @@
+{
+  "id": "tuya-light-v2",
+  "name": "Tuya light, standard v2 data points (20-28)",
+  "description": "The layout most current Tuya Wi-Fi lights use: switch_led 20, work_mode 21, bright_value_v2 22, temp_value_v2 23, colour_data_v2 24, countdown 26, control_data 28. Picked for any device whose status has 20, 21 and 22.",
+  "priority": 10,
+  "match": {
+    "dps": ["20", "21", "22"]
+  },
+  "dps": {
+    "power": { "dp": "20", "type": "bool" },
+    "mode": { "dp": "21", "type": "enum", "values": { "white": "white", "colour": "colour" } },
+    "brightness": { "dp": "22", "type": "int", "min": 10, "max": 1000 },
+    "temperature": { "dp": "23", "type": "int", "min": 0, "max": 1000 },
+    "colour": { "dp": "24", "type": "colour", "format": "hsv16" },
+    "timer": { "dp": "26", "type": "int", "unit": "s", "max": 86400 },
+    "realtime": { "dp": "28", "type": "realtime", "format": "control_v2" }
+  },
+  "write": {
+    "onePerMessage": true,
+    "modeLast": true
+  },
+  "tested": []
+}

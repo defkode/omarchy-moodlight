@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+"""OmaMood command line and shell bridge. `omamood --help`; for agents, AGENTS.md."""
+import os
+import sys
+
+if sys.version_info < (3, 11):
+    sys.stderr.write("omamood needs Python 3.11+\n")
+    sys.exit(4)
+
+# Never leave bytecode in the plugin directory: a file written there reloads the plugin.
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+
+from omamood.cli import main  # noqa: E402
+
+sys.exit(main(sys.argv[1:]))

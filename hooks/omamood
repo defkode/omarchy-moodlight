@@ -1,0 +1,6 @@
+#!/bin/bash
+# OmaMood theme-set hook: tell the running OmaMood service the theme changed, so
+# lamps follow the new wallpaper or accent. Installed by the panel's "Install
+# theme hook" button, or: omarchy hook install theme-set <plugin dir>/hooks/omamood
+# Quiet and quick: the service does the work over its open lamp connections.
+omarchy-shell -q omamood themeChanged "${1:-}" >/dev/null 2>&1 || true

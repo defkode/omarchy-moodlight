@@ -1,0 +1,21 @@
+{
+  "id": "tuya-light-v1",
+  "name": "Tuya light, legacy v1 data points (1-5)",
+  "description": "Older Tuya bulbs: switch 1, mode 2, brightness 3 (25-255), colour temperature 4 (0-255), colour 5 as RRGGBBHHHHSSVV. Picked for any device whose status has 1, 2, 3 and 5. Untested on real hardware: if you own one, add a pin (docs/ADDING_DEVICES.md).",
+  "priority": 5,
+  "match": {
+    "dps": ["1", "2", "3", "5"]
+  },
+  "dps": {
+    "power": { "dp": "1", "type": "bool" },
+    "mode": { "dp": "2", "type": "enum", "values": { "white": "white", "colour": "colour" } },
+    "brightness": { "dp": "3", "type": "int", "min": 25, "max": 255 },
+    "temperature": { "dp": "4", "type": "int", "min": 0, "max": 255 },
+    "colour": { "dp": "5", "type": "colour", "format": "rgbhsv" }
+  },
+  "write": {
+    "onePerMessage": true,
+    "modeLast": true
+  },
+  "tested": []
+}

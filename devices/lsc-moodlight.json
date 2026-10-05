@@ -1,0 +1,28 @@
+{
+  "id": "lsc-moodlight",
+  "name": "LSC Smart Connect Mood Light (Action 3204432)",
+  "description": "RGB + 3000K mood light sold by Action. Standard v2 data points, plus 25 scene_data, 27 music_data and 42 (built-in microphone config), which OmaMood leaves alone. No colour temperature DP: white is fixed at 3000K.",
+  "extends": "tuya-light-v2",
+  "priority": 100,
+  "match": {
+    "product": ["LSC Moodlight", "LSC Smart Mood Light RGB+WW"]
+  },
+  "dps": {
+    "temperature": null
+  },
+  "notes": [
+    "Writing 24 (colour) switches the lamp to colour mode by itself, so the mode is written last.",
+    "A single CONTROL that changes the mode together with other data points is ignored: one DP per message.",
+    "Writing 42 (mic config) leaves the lamp in work_mode 'music'; OmaMood never writes it.",
+    "28 (control_data) with change mode 0 switches instantly; 24 fades over ~0.5 s. Blinks use 28."
+  ],
+  "tested": [
+    {
+      "owner": "defkode",
+      "model": "LSC Smart Mood Light RGB+WW, article 3204432 (Action)",
+      "protocol": "3.3",
+      "date": "2026-10-05",
+      "pin": "tests/pins/lsc-moodlight.json"
+    }
+  ]
+}

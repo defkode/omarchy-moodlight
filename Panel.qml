@@ -1,0 +1,440 @@
+import QtQuick
+import Quickshell
+import Quickshell.Io
+import qs.Commons
+import qs.Ui
+import "Model.js" as Model
+
+// The bar widget: a bulb tinted with the lamp's colour, and a panel with every
+// lamp's power, brightness, white/colour and theme swatches, the options, and
+// QR setup. One instance per monitor; all state lives in Service.qml.
+Panel {
+  id: root
+  moduleName: "io.github.defkode.omamood"
+  // The service owns the "omamood" IPC target; the shell's own
+  // `shell toggle <id>` opens and closes this panel.
+  manageIpc: false
+
+  readonly property var service: bar && bar.shell ? bar.shell.serviceFor("io.github.defkode.omamood") : null
+  readonly property var lamps: service ? service.lamps : []
+  readonly property var setupState: service ? service.setup : ({ stage: "idle" })
+  readonly property bool settingUp: setupState.stage !== "idle" && setupState.stage !== "done"
+  readonly property bool showSetup: lamps.length === 0 || setupOpen || settingUp
+  property bool setupOpen: false
+  property var palette: ({})
+  readonly property color fg: bar ? bar.foreground : Color.foreground
+  readonly property color dim: Qt.darker(fg, 1.5)
+  readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
+
+  function cmd(obj) { if (root.service) root.service.send(obj) }
+
+  function setSetting(key, value) {
+    var s = Object.assign({}, root.settings || {})
+    s[key] = value
+    if (root.bar && root.bar.shell) root.bar.shell.updateEntryInline(root.moduleName, s)
+  }
+
+  // ---- Settings into the service. Fallbacks = manifest.json defaults.
+  Binding { target: root.service; when: root.service !== null; property: "colorSource"; value: String(root.setting("colorSource", "wallpaper")) }
+  Binding { target: root.service; when: root.service !== null; property: "saturationFloor"; value: Number(root.setting("saturationFloor", 70)) }
+  Binding { target: root.service; when: root.service !== null; property: "alertBlink"; value: root.setting("alertBlink", true) !== false }
+  Binding { target: root.service; when: root.service !== null; property: "alertClasses"; value: String(root.setting("alertClasses", Model.DEFAULT_ALERT_CLASSES)) }
+  Binding { target: root.service; when: root.service !== null; property: "alertColor"; value: String(root.setting("alertColor", "")) }
+  Binding { target: root.service; when: root.service !== null; property: "idleAction"; value: String(root.setting("idleAction", "none")) }
+  Binding { target: root.service; when: root.service !== null; property: "idleSeconds"; value: Number(root.setting("idleSeconds", 300)) }
+  Binding { target: root.service; when: root.service !== null; property: "sleepAction"; value: String(root.setting("sleepAction", "off")) }
+
+  // ---- Theme palette for the swatches; re-read when the theme changes.
+  FileView {
+    id: colorsFile
+    path: Quickshell.env("HOME") + "/.local/state/omarchy/current/theme/colors.toml"
+    onLoaded: root.palette = Model.parseColorsToml(text())
+  }
+  Connections {
+    target: Color
+    function onAccentChanged() { colorsFile.reload() }
+  }
+
+  BarIconButton {
+    id: button
+    anchors.fill: parent
+    bar: root.bar
+    text: Model.glyph(root.lamps)
+    foreground: {
+      var t = root.setting("tintIcon", true) !== false ? Model.tint(root.lamps) : null
+      return t ? t : (root.bar ? root.bar.barForeground : Color.foreground)
+    }
+    dimmed: root.lamps.length > 0 && Model.onlineCount(root.lamps) === 0
+    tooltipText: root.opened ? "" : Model.tooltip(root.lamps)
+    onPressed: function(b) {
+      if (b === Qt.RightButton) root.cmd({ cmd: "power", value: "toggle" })
+      else root.toggle()
+    }
+    onWheelMoved: function(delta) { root.cmd({ cmd: "brightness", value: delta > 0 ? "+10" : "-10" }) }
+  }
+
+  KeyboardPanel {
+    id: panel
+    anchorItem: button
+    owner: root
+    bar: root.bar
+    open: root.opened
+    focusTarget: keyCatcher
+    contentWidth: panel.fittedContentWidth(Style.space(360))
+    contentHeight: panel.fittedContentHeight(column.implicitHeight)
+
+    PanelKeyCatcher {
+      id: keyCatcher
+      anchors.fill: parent
+      onCloseRequested: root.close()
+      onTabRequested: function(direction) { root.switchPanel(direction) }
+      onActivateRequested: root.cmd({ cmd: "power", value: "toggle" })
+      onMoveRequested: function(dx, dy) {
+        if (dx !== 0) root.cmd({ cmd: "brightness", value: dx > 0 ? "+10" : "-10" })
+      }
+
+      Column {
+        id: column
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        spacing: Style.space(14)
+
+        // ---------- Hero
+        Item {
+          width: parent.width
+          implicitHeight: Math.max(heroIcon.implicitHeight, heroText.implicitHeight)
+
+          Text {
+            id: heroIcon
+            text: Model.glyph(root.lamps)
+            color: Model.tint(root.lamps) || root.fg
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.display
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+          }
+
+          Column {
+            id: heroText
+            anchors.left: heroIcon.right
+            anchors.leftMargin: Style.space(14)
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Style.space(2)
+
+            Text {
+              text: "OmaMood"
+              color: root.fg
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.title
+              font.bold: true
+            }
+            Text {
+              textFormat: Text.PlainText
+              width: parent.width
+              text: root.service && root.service.bridgeError !== "" ? root.service.bridgeError
+                : Model.summary(root.lamps, root.setupState).toUpperCase()
+              color: root.dim
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+              font.bold: true
+              font.letterSpacing: 1
+              elide: Text.ElideRight
+            }
+          }
+        }
+
+        // ---------- Lamps
+        Repeater {
+          model: root.lamps
+
+          Column {
+            id: lampCard
+            required property var modelData
+            readonly property bool usable: modelData.online && modelData.on
+            width: column.width
+            spacing: Style.space(8)
+
+            Item {
+              width: parent.width
+              implicitHeight: Math.max(lampName.implicitHeight + lampLine.implicitHeight, power.implicitHeight)
+
+              Text {
+                id: lampName
+                textFormat: Text.PlainText
+                anchors.left: parent.left
+                anchors.right: power.left
+                anchors.top: parent.top
+                text: lampCard.modelData.name
+                color: root.fg
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.body
+                font.bold: true
+                elide: Text.ElideRight
+              }
+              Text {
+                id: lampLine
+                textFormat: Text.PlainText
+                anchors.left: parent.left
+                anchors.right: power.left
+                anchors.top: lampName.bottom
+                text: Model.lampLine(lampCard.modelData)
+                color: root.dim
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                elide: Text.ElideRight
+              }
+              ToggleSwitch {
+                id: power
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                checked: lampCard.modelData.on === true
+                interactive: lampCard.modelData.online
+                foreground: root.fg
+                onToggled: root.cmd({ cmd: "power", lamp: lampCard.modelData.id, value: checked ? "off" : "on" })
+              }
+            }
+
+            PanelSlider {
+              width: parent.width
+              visible: lampCard.usable
+              bar: root.bar
+              minimum: 1
+              maximum: 100
+              step: 1
+              integer: true
+              value: lampCard.modelData.brightness || 1
+              onReleased: function(v) { root.cmd({ cmd: "brightness", lamp: lampCard.modelData.id, value: Math.round(v) }) }
+            }
+
+            ButtonGroup {
+              width: parent.width
+              visible: lampCard.usable && (lampCard.modelData.capabilities || []).indexOf("colour") >= 0
+              options: [{ value: "white", label: "White" }, { value: "colour", label: "Colour" }]
+              value: lampCard.modelData.mode === "white" ? "white" : "colour"
+              foreground: root.fg
+              fontFamily: root.fontFamily
+              onChanged: function(v) {
+                if (v === "white") root.cmd({ cmd: "white", lamp: lampCard.modelData.id })
+                else root.cmd({ cmd: "color", lamp: lampCard.modelData.id,
+                  value: lampCard.modelData.color || String(Color.accent) })
+              }
+            }
+
+            Row {
+              visible: lampCard.usable && (lampCard.modelData.capabilities || []).indexOf("colour") >= 0
+              spacing: Style.space(8)
+
+              Repeater {
+                model: Model.swatches(root.palette)
+
+                Rectangle {
+                  required property var modelData
+                  width: Style.space(22)
+                  height: width
+                  radius: width / 2
+                  color: modelData.color
+                  border.width: 1
+                  border.color: Qt.darker(root.fg, 2)
+
+                  MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.cmd({ cmd: "color", lamp: lampCard.modelData.id, value: parent.modelData.color })
+                  }
+                }
+              }
+
+              Button {
+                text: "Wallpaper"
+                foreground: root.fg
+                fontFamily: root.fontFamily
+                fontSize: Style.font.caption
+                onClicked: root.cmd({ cmd: "wallpaper", lamp: lampCard.modelData.id, force: true })
+              }
+            }
+          }
+        }
+
+        // ---------- Options
+        Column {
+          width: parent.width
+          visible: root.lamps.length > 0 && !root.showSetup
+          spacing: Style.space(8)
+
+          PanelSectionHeader { text: "On theme change"; foreground: root.dim }
+
+          ButtonGroup {
+            width: parent.width
+            options: [{ value: "wallpaper", label: "Wallpaper" }, { value: "accent", label: "Accent" }, { value: "off", label: "Off" }]
+            value: String(root.setting("colorSource", "wallpaper"))
+            foreground: root.fg
+            fontFamily: root.fontFamily
+            onChanged: function(v) { root.setSetting("colorSource", v) }
+          }
+
+          Item {
+            width: parent.width
+            visible: root.service && !root.service.hookInstalled && root.setting("colorSource", "wallpaper") !== "off"
+            implicitHeight: Math.max(hookText.implicitHeight, hookButton.implicitHeight)
+
+            Text {
+              id: hookText
+              anchors.left: parent.left
+              anchors.right: hookButton.left
+              anchors.rightMargin: Style.space(8)
+              anchors.verticalCenter: parent.verticalCenter
+              text: "Theme hook not installed: lamps won't follow theme changes."
+              wrapMode: Text.Wrap
+              color: root.dim
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+            }
+            Button {
+              id: hookButton
+              anchors.right: parent.right
+              anchors.verticalCenter: parent.verticalCenter
+              text: "Install"
+              bordered: true
+              foreground: root.fg
+              fontFamily: root.fontFamily
+              onClicked: root.service.installHook()
+            }
+          }
+
+          Toggle {
+            width: parent.width
+            label: "Blink on terminal alerts"
+            description: "A background terminal ringing its bell flashes the lamp."
+            checked: root.setting("alertBlink", true) !== false
+            foreground: root.fg
+            fontFamily: root.fontFamily
+            onClicked: root.setSetting("alertBlink", !checked)
+          }
+        }
+
+        // ---------- Setup
+        Column {
+          width: parent.width
+          visible: root.showSetup
+          spacing: Style.space(10)
+
+          PanelSectionHeader { text: "Add lamps"; foreground: root.dim }
+
+          Text {
+            width: parent.width
+            visible: root.setupState.stage === "idle" || root.setupState.stage === "error" || root.setupState.stage === "done"
+            text: "In the Smart Life app: Me → Settings → Account and Security → User Code. Enter it, then scan the QR code with the app (+ → Scan) and tap Confirm login. Keys stay on this computer."
+            wrapMode: Text.Wrap
+            color: root.dim
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
+          }
+
+          Item {
+            width: parent.width
+            visible: !root.settingUp
+            implicitHeight: Math.max(userCode.implicitHeight, qrButton.implicitHeight)
+
+            TextField {
+              id: userCode
+              anchors.left: parent.left
+              anchors.right: qrButton.left
+              anchors.rightMargin: Style.space(8)
+              anchors.verticalCenter: parent.verticalCenter
+              placeholderText: "User Code"
+              font.family: root.fontFamily
+              onAccepted: qrButton.clicked()
+            }
+            Button {
+              id: qrButton
+              anchors.right: parent.right
+              anchors.verticalCenter: parent.verticalCenter
+              text: "Show QR"
+              bordered: true
+              foreground: root.fg
+              fontFamily: root.fontFamily
+              onClicked: if (userCode.text.trim() !== "") root.cmd({ cmd: "setup.qr", userCode: userCode.text.trim() })
+            }
+          }
+
+          Rectangle {
+            id: qrCanvas
+            readonly property var rows: root.setupState.qr || []
+            readonly property int size: rows.length
+            readonly property int moduleSize: size > 0 ? Math.max(3, Math.floor(Style.space(220) / size)) : 0
+            visible: root.setupState.stage === "scan" && size > 0
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: size * moduleSize
+            height: width
+            color: "white"
+            radius: Style.cornerRadius
+
+            Grid {
+              anchors.fill: parent
+              columns: qrCanvas.size
+
+              Repeater {
+                model: qrCanvas.size * qrCanvas.size
+
+                Rectangle {
+                  required property int index
+                  width: qrCanvas.moduleSize
+                  height: qrCanvas.moduleSize
+                  color: qrCanvas.rows[Math.floor(index / qrCanvas.size)].charAt(index % qrCanvas.size) === "1" ? "#111111" : "transparent"
+                }
+              }
+            }
+          }
+
+          Text {
+            width: parent.width
+            visible: root.setupState.stage !== "idle"
+            text: Model.stageLabel(root.setupState)
+            wrapMode: Text.Wrap
+            color: root.setupState.stage === "error" ? Color.urgent : root.fg
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.bodySmall
+          }
+
+          Button {
+            visible: root.settingUp
+            text: "Cancel"
+            foreground: root.fg
+            fontFamily: root.fontFamily
+            onClicked: root.cmd({ cmd: "setup.cancel" })
+          }
+        }
+
+        // ---------- Footer
+        Row {
+          spacing: Style.space(8)
+          visible: root.lamps.length > 0
+
+          Button {
+            text: root.showSetup ? "Done" : "Add lamps"
+            foreground: root.fg
+            fontFamily: root.fontFamily
+            fontSize: Style.font.caption
+            onClicked: root.setupOpen = !root.setupOpen
+          }
+          Button {
+            text: "Find lamps"
+            foreground: root.fg
+            fontFamily: root.fontFamily
+            fontSize: Style.font.caption
+            onClicked: root.cmd({ cmd: "discover" })
+          }
+          Button {
+            text: "Test blink"
+            foreground: root.fg
+            fontFamily: root.fontFamily
+            fontSize: Style.font.caption
+            onClicked: if (root.service) root.service.blink()
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "profile": "lsc-moodlight",
+  "owner": "defkode",
+  "model": "LSC Smart Mood Light RGB+WW, article 3204432 (Action)",
+  "protocol": "3.3",
+  "date": "2026-10-05",
+  "notes": "Statuses were read from the owner's lamp over the LAN. Writes are what OmaMood sends; their shape (one DP per message, mode last, restore order 24 -> 22 -> 21, dp 28 jump) was verified on the lamp, while exact values like the 30-minute timer are illustrative. Keys and ids are never part of a pin.",
+  "statuses": [
+    {
+      "dps": {"20": true, "21": "white", "22": 764, "24": "000003e802bc", "25": "000e0d0000000000000000c803e8", "26": 0, "42": "010000016432000003e8007803e800f003e8003c03e800b403e8012c03e8"},
+      "state": {"on": true, "mode": "white", "brightness": 76, "temperature": null, "timer": 0}
+    },
+    {
+      "dps": {"20": true, "21": "colour", "22": 760, "24": "00d003de02f8", "25": "000e0d0000000000000000c803e8", "26": 0, "42": "010000016432000003e8007803e800f003e8003c03e800b403e8012c03e8"},
+      "state": {"on": true, "mode": "colour", "brightness": 76, "hsv": [208, 0.99, 0.76], "temperature": null, "timer": 0}
+    },
+    {
+      "dps": {"20": true, "21": "music", "22": 760, "24": "00cb02bc02f8", "26": 0},
+      "state": {"on": true, "mode": "music", "brightness": 76}
+    }
+  ],
+  "writes": [
+    {"call": ["plan_power", false], "expect": [{"20": false}]},
+    {"call": ["plan_colour", 207, 0.99, 0.76], "expect": [{"24": "00cf03de02f8"}, {"21": "colour"}]},
+    {"call": ["plan_white", 76], "expect": [{"22": 762}, {"21": "white"}]},
+    {"call": ["plan_timer", 1800], "expect": [{"26": 1800}]},
+    {"call": ["realtime", 0, 1.0, 1.0], "expect": {"28": "0000003e803e800000000"}},
+    {"call": ["plan_restore", {"20": true, "21": "white", "22": 760, "24": "00cf03de02f8", "26": 0}],
+     "expect": [{"24": "00cf03de02f8"}, {"22": 760}, {"21": "white"}, {"20": true}]}
+  ]
+}
