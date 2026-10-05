@@ -60,6 +60,59 @@ Panel {
     function onAccentChanged() { colorsFile.reload() }
   }
 
+  // "Match lamp to": one setting for every lamp. With one lamp it sits inside
+  // its card, between White / Colour and the colour picker it governs; with
+  // several, once above the list.
+  Component {
+    id: followSection
+    Column {
+    width: parent ? parent.width : 0
+    spacing: Style.space(8)
+
+    PanelSectionHeader { text: "Match lamp to"; foreground: root.dim }
+
+    ButtonGroup {
+      width: parent.width
+      options: [{ value: "wallpaper", label: "Wallpaper", tooltip: "Main colour of the wallpaper, on every theme change" },
+        { value: "accent", label: "Theme accent", tooltip: "The theme's accent colour, on every theme change" },
+        { value: "off", label: "Nothing", tooltip: "Theme changes leave the lamp alone" }]
+      value: root.colorSource
+      foreground: root.fg
+      fontFamily: root.fontFamily
+      onChanged: function(v) { root.setSetting("colorSource", v) }
+    }
+
+    Item {
+      width: parent.width
+      visible: root.service && !root.service.hookInstalled && root.setting("colorSource", "wallpaper") !== "off"
+      implicitHeight: Math.max(hookText.implicitHeight, hookButton.implicitHeight)
+
+      Text {
+        id: hookText
+        anchors.left: parent.left
+        anchors.right: hookButton.left
+        anchors.rightMargin: Style.space(8)
+        anchors.verticalCenter: parent.verticalCenter
+        text: "Theme hook not installed: the lamp can't follow theme changes yet."
+        wrapMode: Text.Wrap
+        color: root.dim
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.caption
+      }
+      Button {
+        id: hookButton
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        text: "Install"
+        bordered: true
+        foreground: root.fg
+        fontFamily: root.fontFamily
+        onClicked: root.service.installHook()
+      }
+    }
+    }
+  }
+
   BarIconButton {
     id: button
     anchors.fill: parent
@@ -148,6 +201,13 @@ Panel {
               elide: Text.ElideRight
             }
           }
+        }
+
+        Loader {
+          width: parent.width
+          active: root.lamps.length > 1 && !root.showSetup
+          visible: active
+          sourceComponent: followSection
         }
 
         // ---------- Lamps
@@ -254,6 +314,13 @@ Panel {
               }
             }
 
+            Loader {
+              width: parent.width
+              active: root.lamps.length === 1 && !root.showSetup
+              visible: active
+              sourceComponent: followSection
+            }
+
             Row {
               visible: lampCard.usable && root.manualColour && (lampCard.modelData.capabilities || []).indexOf("colour") >= 0
               spacing: Style.space(8)
@@ -294,55 +361,6 @@ Panel {
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
-            }
-          }
-        }
-
-        // ---------- Options
-        Column {
-          width: parent.width
-          visible: root.lamps.length > 0 && !root.showSetup
-          spacing: Style.space(8)
-
-          PanelSectionHeader { text: "Match lamp to"; foreground: root.dim }
-
-          ButtonGroup {
-            width: parent.width
-            options: [{ value: "wallpaper", label: "Wallpaper", tooltip: "Main colour of the wallpaper, on every theme change" },
-              { value: "accent", label: "Theme accent", tooltip: "The theme's accent colour, on every theme change" },
-              { value: "off", label: "Nothing", tooltip: "Theme changes leave the lamp alone" }]
-            value: root.colorSource
-            foreground: root.fg
-            fontFamily: root.fontFamily
-            onChanged: function(v) { root.setSetting("colorSource", v) }
-          }
-
-          Item {
-            width: parent.width
-            visible: root.service && !root.service.hookInstalled && root.setting("colorSource", "wallpaper") !== "off"
-            implicitHeight: Math.max(hookText.implicitHeight, hookButton.implicitHeight)
-
-            Text {
-              id: hookText
-              anchors.left: parent.left
-              anchors.right: hookButton.left
-              anchors.rightMargin: Style.space(8)
-              anchors.verticalCenter: parent.verticalCenter
-              text: "Theme hook not installed: the lamp can't follow theme changes yet."
-              wrapMode: Text.Wrap
-              color: root.dim
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.caption
-            }
-            Button {
-              id: hookButton
-              anchors.right: parent.right
-              anchors.verticalCenter: parent.verticalCenter
-              text: "Install"
-              bordered: true
-              foreground: root.fg
-              fontFamily: root.fontFamily
-              onClicked: root.service.installHook()
             }
           }
         }
