@@ -177,7 +177,8 @@ Panel {
             id: heroText
             anchors.left: heroIcon.right
             anchors.leftMargin: Style.space(14)
-            anchors.right: parent.right
+            anchors.right: gearButton.left
+            anchors.rightMargin: Style.space(8)
             anchors.verticalCenter: parent.verticalCenter
             spacing: Style.space(2)
 
@@ -200,6 +201,21 @@ Panel {
               font.letterSpacing: 1
               elide: Text.ElideRight
             }
+          }
+
+          // Lamp management (add, remove, find) lives behind this icon so the
+          // everyday panel stays minimal.
+          Button {
+            id: gearButton
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.lamps.length > 0
+            iconText: Model.GLYPH_SETTINGS
+            tooltipText: root.setupOpen ? "Done" : "Manage lamps"
+            selected: root.setupOpen
+            foreground: root.fg
+            fontFamily: root.fontFamily
+            onClicked: root.setupOpen = !root.setupOpen
           }
         }
 
@@ -450,15 +466,8 @@ Panel {
         // ---------- Footer
         Row {
           spacing: Style.space(8)
-          visible: root.lamps.length > 0
+          visible: root.lamps.length > 0 && root.setupOpen
 
-          Button {
-            text: root.setupOpen ? "Done" : "Manage lamps"
-            foreground: root.fg
-            fontFamily: root.fontFamily
-            fontSize: Style.font.caption
-            onClicked: root.setupOpen = !root.setupOpen
-          }
           Button {
             text: root.searching ? "Searching…" : "Find lamps"
             foreground: root.searching ? root.dim : root.fg
@@ -471,7 +480,7 @@ Panel {
         // "Find lamps" progress and result (the bridge clears it after ~15 s).
         Text {
           width: parent.width
-          visible: text !== ""
+          visible: text !== "" && root.setupOpen
           textFormat: Text.PlainText
           text: Model.discoveryLabel(root.discoveryState)
           wrapMode: Text.Wrap

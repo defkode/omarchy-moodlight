@@ -7,6 +7,7 @@
 var GLYPH_ON = String.fromCodePoint(0xF06E8)     // nf-md-lightbulb_on
 var GLYPH_OFF = String.fromCodePoint(0xF0336)    // nf-md-lightbulb_outline
 var GLYPH_NONE = String.fromCodePoint(0xF0335)   // nf-md-lightbulb
+var GLYPH_SETTINGS = String.fromCodePoint(0xF0493) // nf-md-cog
 
 var PALETTE_KEYS = ["accent", "red", "yellow", "green", "cyan", "blue", "magenta"]
 

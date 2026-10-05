@@ -65,10 +65,10 @@ readable only by you.
   - **Custom**: theme changes leave the lamp alone, and you pick the colour from
     the swatches: white (the lamp's warm white), your theme's colours, or
     **Wallpaper** for the current wallpaper's colour.
-- **Manage lamps** adds more lamps (QR again) or removes one
-  (**Remove**, then **Confirm?**).
-- **Find lamps** finds lamps again if one shows *Offline*, for example after
-  your router gave it a new address.
+- **⚙ (top right)** opens lamp management; click it again to go back:
+  - add more lamps (QR again), or remove one (**Remove**, then **Confirm?**);
+  - **Find lamps** finds lamps again if one shows *Offline*, for example after
+    your router gave it a new address.
 - Keyboard: `Space` toggles power, `←` `→` change brightness, `Esc` closes.
 
 Lamps that are off stay off when you change themes. Muted theme colours are
@@ -152,14 +152,14 @@ use the `add-device` skill.
 
 ## Troubleshooting
 
-- **A lamp shows "Offline":** click **Find lamps** in the panel. To stop this
+- **A lamp shows "Offline":** click **⚙ → Find lamps** in the panel. To stop this
   happening, give the lamp a fixed IP address (a DHCP reservation) in your router.
 - **No lamps found during setup:** make sure the lamp and the computer are on the
   same network. Firewalls are fine: OmaMood only makes outgoing connections.
 - **The lamp doesn't follow theme changes:** check **Match lamp to** isn't
   *Custom*, and click **Install** if the panel says "Theme hook not installed".
-- **You re-paired the lamp in the app:** its key changes. Remove it in
-  **Manage lamps** and add it again with the QR code.
+- **You re-paired the lamp in the app:** its key changes. Remove it under **⚙**
+  and add it again with the QR code.
 - **Something else:** `omarchy-shell omamood status | python3 -m json.tool`
   shows what the plugin sees, and `journalctl -t omarchy-shell | grep -i omamood`
   its log.
