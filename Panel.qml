@@ -300,9 +300,18 @@ Panel {
               onReleased: function(v) { root.cmd({ cmd: "brightness", lamp: lampCard.modelData.id, value: Math.round(v) }) }
             }
 
+            Loader {
+              width: parent.width
+              active: root.lamps.length === 1 && !root.showSetup
+              visible: active
+              sourceComponent: followSection
+            }
+
+            // Manual colour (White / Colour, swatches) only when theme changes
+            // leave the lamp alone: otherwise the next switch would undo it.
             ButtonGroup {
               width: parent.width
-              visible: lampCard.usable && (lampCard.modelData.capabilities || []).indexOf("colour") >= 0
+              visible: lampCard.usable && root.manualColour && (lampCard.modelData.capabilities || []).indexOf("colour") >= 0
               options: [{ value: "white", label: "White" }, { value: "colour", label: "Colour" }]
               value: lampCard.modelData.mode === "white" ? "white" : "colour"
               foreground: root.fg
@@ -312,13 +321,6 @@ Panel {
                 else root.cmd({ cmd: "color", lamp: lampCard.modelData.id,
                   value: lampCard.modelData.color || String(Color.accent) })
               }
-            }
-
-            Loader {
-              width: parent.width
-              active: root.lamps.length === 1 && !root.showSetup
-              visible: active
-              sourceComponent: followSection
             }
 
             Row {
@@ -352,15 +354,6 @@ Panel {
                 fontSize: Style.font.caption
                 onClicked: root.cmd({ cmd: "wallpaper", lamp: lampCard.modelData.id, force: true })
               }
-            }
-
-            Text {
-              visible: lampCard.usable && !root.manualColour && (lampCard.modelData.capabilities || []).indexOf("colour") >= 0
-              textFormat: Text.PlainText
-              text: Model.followLabel(root.colorSource)
-              color: root.dim
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.caption
             }
           }
         }
