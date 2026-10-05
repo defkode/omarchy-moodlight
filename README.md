@@ -5,7 +5,7 @@ brightness and colour. The lamp can match your wallpaper or theme accent every
 time you change themes, and it switches off while the computer sleeps, coming
 back as it was when it wakes.
 
-<p align="center"><img src="docs/screenshot.png" alt="The OmaMood panel: settings icon, lamp power, Brightness slider, and Match lamp to with Theme accent selected" width="420"></p>
+<p align="center"><img src="docs/panel.png" alt="The OmaMood panel: settings icon, lamp power, Brightness slider, and Match lamp to with Theme accent selected" width="420"></p>
 
 - **Local.** Commands go straight to the lamp over your home network. The cloud
   is used once during setup, to fetch the lamp's key, and logged out right after.
