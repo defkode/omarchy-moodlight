@@ -312,6 +312,8 @@ Panel {
             Row {
               visible: lampCard.usable && root.manualColour && (lampCard.modelData.capabilities || []).indexOf("colour") >= 0
               spacing: Style.space(8)
+              // Same breathing room as between the panel's other sections.
+              topPadding: Style.space(6)
 
               Repeater {
                 model: Model.swatches(root.palette)
