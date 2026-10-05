@@ -292,11 +292,13 @@ Panel {
           visible: root.lamps.length > 0 && !root.showSetup
           spacing: Style.space(8)
 
-          PanelSectionHeader { text: "On theme change"; foreground: root.dim }
+          PanelSectionHeader { text: "Match lamp to"; foreground: root.dim }
 
           ButtonGroup {
             width: parent.width
-            options: [{ value: "wallpaper", label: "Wallpaper" }, { value: "accent", label: "Accent" }, { value: "off", label: "Off" }]
+            options: [{ value: "wallpaper", label: "Wallpaper", tooltip: "Main colour of the wallpaper, on every theme change" },
+              { value: "accent", label: "Theme accent", tooltip: "The theme's accent colour, on every theme change" },
+              { value: "off", label: "Nothing", tooltip: "Theme changes leave the lamp alone" }]
             value: String(root.setting("colorSource", "wallpaper"))
             foreground: root.fg
             fontFamily: root.fontFamily
@@ -314,7 +316,7 @@ Panel {
               anchors.right: hookButton.left
               anchors.rightMargin: Style.space(8)
               anchors.verticalCenter: parent.verticalCenter
-              text: "Theme hook not installed: lamps won't follow theme changes."
+              text: "Theme hook not installed: the lamp can't follow theme changes yet."
               wrapMode: Text.Wrap
               color: root.dim
               font.family: root.fontFamily

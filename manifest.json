@@ -43,14 +43,14 @@
       {
         "key": "colorSource",
         "type": "enum",
-        "label": "On theme change, colour the lamp from",
+        "label": "Match lamp to (on theme change)",
         "options": [
           "wallpaper",
           "accent",
           "off"
         ],
         "defaultValue": "wallpaper",
-        "description": "Needs the theme hook (the panel offers to install it). Lamps that are off stay off."
+        "description": "wallpaper: the wallpaper's main colour; accent: the theme's accent colour; off: nothing, theme changes leave the lamp alone. Needs the theme hook (the panel offers to install it). Lamps that are off stay off."
       },
       {
         "key": "saturationFloor",
