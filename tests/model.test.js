@@ -6,7 +6,7 @@ const src = await Deno.readTextFile(new URL("../Model.js", import.meta.url))
 const M = {}
 new Function("exports", src.replace(/^\.pragma library$/m, "") + `
   for (const k of ["parseLine","anyOn","glyph","tint","hsvToHex","lampLine","summary","tooltip",
-    "stageLabel","discoveryLabel","parseColorsToml","swatches",
+    "stageLabel","discoveryLabel","followLabel","parseColorsToml","swatches",
     "bridgeSettings","themeCommand","parseCommand","backoff","GLYPH_ON","GLYPH_OFF","GLYPH_NONE"])
     exports[k] = eval(k)`)(M)
 
@@ -56,6 +56,12 @@ Deno.test("discovery label", () => {
   assertEquals(M.discoveryLabel({ stage: "done", found: [{ name: "Moodlight", ip: "10.0.0.9", moved: true }], missing: ["Desk"] }),
     "Moodlight moved to 10.0.0.9 · Desk not found")
   assertEquals(M.discoveryLabel({ stage: "done", found: [], missing: [], error: "boom" }), "Search failed: boom")
+})
+
+Deno.test("follow label", () => {
+  assertEquals(M.followLabel("wallpaper"), "Colour follows the wallpaper")
+  assertEquals(M.followLabel("accent"), "Colour follows the theme accent")
+  assertEquals(M.followLabel("off"), "")
 })
 
 Deno.test("palette", () => {

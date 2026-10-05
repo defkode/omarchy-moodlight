@@ -47,8 +47,8 @@ Already have a local key (e.g. from `tinytuya wizard`)?
 
 - **Bar icon:** click for the panel, right-click to toggle, scroll for brightness.
   The bulb takes the lamp's colour.
-- **Panel:** per lamp power, brightness, White / Colour, your theme's colours as
-  swatches, the current wallpaper's colour; what to match the lamp to when the theme changes.
+- **Panel:** per lamp power, brightness, White / Colour, and — when *Match lamp to*
+  is *Nothing* — your theme's colours as swatches and the current wallpaper's colour; what to match the lamp to when the theme changes.
   **Manage lamps** adds lamps (QR) or removes them (Remove → Confirm?). Keys: `Space` toggles, `←/→` brightness, `Esc` closes.
 - **Theme change:** lamps that are on take the new wallpaper's main colour (or the
   theme accent). Muted palettes are made more saturated so they still read as a

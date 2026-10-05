@@ -100,6 +100,13 @@ function stageLabel(setup) {
   }
 }
 
+// Shown instead of the swatches while theme changes drive the lamp's colour.
+function followLabel(colorSource) {
+  if (colorSource === "wallpaper") return "Colour follows the wallpaper"
+  if (colorSource === "accent") return "Colour follows the theme accent"
+  return ""
+}
+
 // "Find lamps" progress line; "" when there is nothing to say.
 function discoveryLabel(d) {
   if (!d || d.stage === "idle" || !d.stage) return ""

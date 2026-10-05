@@ -23,6 +23,9 @@ Panel {
   readonly property var setupState: service ? service.setup : ({ stage: "idle" })
   readonly property var discoveryState: service ? service.discovery : ({ stage: "idle" })
   readonly property bool searching: discoveryState.stage === "searching"
+  // Manual colour picks only make sense when theme changes leave the lamp alone.
+  readonly property string colorSource: String(setting("colorSource", "wallpaper"))
+  readonly property bool manualColour: colorSource === "off"
   readonly property bool settingUp: ["requesting", "scan", "fetching", "locating"].indexOf(setupState.stage) >= 0
   readonly property bool showSetup: lamps.length === 0 || setupOpen || settingUp || setupState.stage === "error"
   property bool setupOpen: false
@@ -252,7 +255,7 @@ Panel {
             }
 
             Row {
-              visible: lampCard.usable && (lampCard.modelData.capabilities || []).indexOf("colour") >= 0
+              visible: lampCard.usable && root.manualColour && (lampCard.modelData.capabilities || []).indexOf("colour") >= 0
               spacing: Style.space(8)
 
               Repeater {
@@ -283,6 +286,15 @@ Panel {
                 onClicked: root.cmd({ cmd: "wallpaper", lamp: lampCard.modelData.id, force: true })
               }
             }
+
+            Text {
+              visible: lampCard.usable && !root.manualColour && (lampCard.modelData.capabilities || []).indexOf("colour") >= 0
+              textFormat: Text.PlainText
+              text: Model.followLabel(root.colorSource)
+              color: root.dim
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+            }
           }
         }
 
@@ -299,7 +311,7 @@ Panel {
             options: [{ value: "wallpaper", label: "Wallpaper", tooltip: "Main colour of the wallpaper, on every theme change" },
               { value: "accent", label: "Theme accent", tooltip: "The theme's accent colour, on every theme change" },
               { value: "off", label: "Nothing", tooltip: "Theme changes leave the lamp alone" }]
-            value: String(root.setting("colorSource", "wallpaper"))
+            value: root.colorSource
             foreground: root.fg
             fontFamily: root.fontFamily
             onChanged: function(v) { root.setSetting("colorSource", v) }
