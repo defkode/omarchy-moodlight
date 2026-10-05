@@ -34,7 +34,7 @@
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
-      "colorSource": "wallpaper",
+      "colorSource": "accent",
       "saturationFloor": 70,
       "sleepAction": "off",
       "tintIcon": true
@@ -45,12 +45,12 @@
         "type": "enum",
         "label": "Match lamp to (on theme change)",
         "options": [
-          "wallpaper",
           "accent",
+          "wallpaper",
           "off"
         ],
-        "defaultValue": "wallpaper",
-        "description": "wallpaper: the wallpaper's main colour; accent: the theme's accent colour; off (Custom in the panel): you pick the colour, theme changes leave the lamp alone. Needs the theme hook (the panel offers to install it). Lamps that are off stay off."
+        "defaultValue": "accent",
+        "description": "accent: the theme's accent colour; wallpaper: the wallpaper's main colour; off (Custom in the panel): you pick the colour, theme changes leave the lamp alone. Needs the theme hook (the panel offers to install it). Lamps that are off stay off."
       },
       {
         "key": "saturationFloor",

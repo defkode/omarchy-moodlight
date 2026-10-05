@@ -120,7 +120,7 @@ Most people only need the panel. Everything can also be set with
 
 | Setting | Default | What it does |
 |:--|:--|:--|
-| `colorSource` | `wallpaper` | **Match lamp to**: `accent`, `wallpaper` or `off` (Custom) |
+| `colorSource` | `accent` | **Match lamp to**: `accent`, `wallpaper` or `off` (Custom) |
 | `saturationFloor` | `70` | how much (%) muted theme colours are boosted |
 | `sleepAction` | `off` | `off`: lamps off during sleep. `none`: leave them alone |
 | `tintIcon` | `true` | colour the bar icon like the lamp |

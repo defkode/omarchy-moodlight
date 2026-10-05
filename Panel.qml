@@ -24,7 +24,7 @@ Panel {
   readonly property var discoveryState: service ? service.discovery : ({ stage: "idle" })
   readonly property bool searching: discoveryState.stage === "searching"
   // Manual colour picks only make sense when theme changes leave the lamp alone.
-  readonly property string colorSource: String(setting("colorSource", "wallpaper"))
+  readonly property string colorSource: String(setting("colorSource", "accent"))
   readonly property bool manualColour: colorSource === "off"
   readonly property bool settingUp: ["requesting", "scan", "fetching", "locating"].indexOf(setupState.stage) >= 0
   readonly property bool showSetup: lamps.length === 0 || setupOpen || settingUp || setupState.stage === "error"
@@ -45,7 +45,7 @@ Panel {
   }
 
   // ---- Settings into the service. Fallbacks = manifest.json defaults.
-  Binding { target: root.service; when: root.service !== null; property: "colorSource"; value: String(root.setting("colorSource", "wallpaper")) }
+  Binding { target: root.service; when: root.service !== null; property: "colorSource"; value: String(root.setting("colorSource", "accent")) }
   Binding { target: root.service; when: root.service !== null; property: "saturationFloor"; value: Number(root.setting("saturationFloor", 70)) }
   Binding { target: root.service; when: root.service !== null; property: "sleepAction"; value: String(root.setting("sleepAction", "off")) }
 
@@ -84,7 +84,7 @@ Panel {
 
     Item {
       width: parent.width
-      visible: root.service && !root.service.hookInstalled && root.setting("colorSource", "wallpaper") !== "off"
+      visible: root.service && !root.service.hookInstalled && root.setting("colorSource", "accent") !== "off"
       implicitHeight: Math.max(hookText.implicitHeight, hookButton.implicitHeight)
 
       Text {

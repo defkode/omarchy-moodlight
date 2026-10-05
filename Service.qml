@@ -29,7 +29,7 @@ Item {
 
   // ---- Settings, pushed in by Panel.qml with Binding. These defaults must
   //      match manifest.json's barWidget.defaults and Panel.qml's fallbacks.
-  property string colorSource: "wallpaper"
+  property string colorSource: "accent"
   property int saturationFloor: 70
   property string sleepAction: "off"
 
