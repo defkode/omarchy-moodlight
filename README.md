@@ -48,8 +48,8 @@ Already have a local key (e.g. from `tinytuya wizard`)?
 - **Bar icon:** click for the panel, right-click to toggle, scroll for brightness.
   The bulb takes the lamp's colour.
 - **Panel:** per lamp power and brightness; *Match lamp to* (what theme changes
-  colour the lamp from); and, when that is *Nothing*, White / Colour, your theme's
-  colours as swatches and the current wallpaper's colour; what to match the lamp to when the theme changes.
+  colour the lamp from); and, when that is *Custom*, swatches: white (the lamp's
+  warm white) and your theme's colours, plus the current wallpaper's colour; what to match the lamp to when the theme changes.
   **Manage lamps** adds lamps (QR) or removes them (Remove → Confirm?). Keys: `Space` toggles, `←/→` brightness, `Esc` closes.
 - **Theme change:** lamps that are on take the new wallpaper's main colour (or the
   theme accent). Muted palettes are made more saturated so they still read as a
@@ -87,7 +87,7 @@ In the panel, or `omarchy bar set io.github.defkode.omamood <key> <value>`:
 
 | key | default | |
 |:--|:--|:--|
-| `colorSource` | `wallpaper` | what to match the lamp to on theme change: `wallpaper`, `accent` (theme accent) or `off` (nothing) |
+| `colorSource` | `wallpaper` | what to match the lamp to on theme change: `wallpaper`, `accent` (theme accent) or `off` (Custom: you pick) |
 | `saturationFloor` | `70` | minimum saturation (%) for theme colours |
 | `sleepAction` | `off` | turn lamps off before suspend, restore after; `none` to leave them |
 | `tintIcon` | `true` | colour the bar icon |

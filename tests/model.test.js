@@ -61,7 +61,8 @@ Deno.test("discovery label", () => {
 Deno.test("palette", () => {
   const p = M.parseColorsToml('accent = "#B59790"\nred = "#c38b7b"\nblue = "#b59790"\nfoo = 3\n')
   assertEquals(p, { accent: "#b59790", red: "#c38b7b", blue: "#b59790" })
-  assertEquals(M.swatches(p).map((s) => s.key), ["accent", "red"])   // duplicates dropped
+  assertEquals(M.swatches(p).map((s) => s.key), ["white", "accent", "red"])   // white first, duplicates dropped
+  assertEquals(M.swatches(p)[0].white, true)
 })
 
 Deno.test("commands and settings", () => {

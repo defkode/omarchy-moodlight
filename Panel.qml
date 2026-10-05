@@ -61,7 +61,7 @@ Panel {
   }
 
   // "Match lamp to": one setting for every lamp. With one lamp it sits inside
-  // its card, between White / Colour and the colour picker it governs; with
+  // its card, between the brightness and the colour picker it governs; with
   // several, once above the list.
   Component {
     id: followSection
@@ -75,7 +75,7 @@ Panel {
       width: parent.width
       options: [{ value: "wallpaper", label: "Wallpaper", tooltip: "Main colour of the wallpaper, on every theme change" },
         { value: "accent", label: "Theme accent", tooltip: "The theme's accent colour, on every theme change" },
-        { value: "off", label: "Nothing", tooltip: "Theme changes leave the lamp alone" }]
+        { value: "off", label: "Custom", tooltip: "Pick the colour yourself; theme changes leave the lamp alone" }]
       value: root.colorSource
       foreground: root.fg
       fontFamily: root.fontFamily
@@ -307,22 +307,8 @@ Panel {
               sourceComponent: followSection
             }
 
-            // Manual colour (White / Colour, swatches) only when theme changes
-            // leave the lamp alone: otherwise the next switch would undo it.
-            ButtonGroup {
-              width: parent.width
-              visible: lampCard.usable && root.manualColour && (lampCard.modelData.capabilities || []).indexOf("colour") >= 0
-              options: [{ value: "white", label: "White" }, { value: "colour", label: "Colour" }]
-              value: lampCard.modelData.mode === "white" ? "white" : "colour"
-              foreground: root.fg
-              fontFamily: root.fontFamily
-              onChanged: function(v) {
-                if (v === "white") root.cmd({ cmd: "white", lamp: lampCard.modelData.id })
-                else root.cmd({ cmd: "color", lamp: lampCard.modelData.id,
-                  value: lampCard.modelData.color || String(Color.accent) })
-              }
-            }
-
+            // Custom colour (swatches) only when theme changes leave the lamp
+            // alone: otherwise the next switch would undo it.
             Row {
               visible: lampCard.usable && root.manualColour && (lampCard.modelData.capabilities || []).indexOf("colour") >= 0
               spacing: Style.space(8)
@@ -342,7 +328,9 @@ Panel {
                   MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.cmd({ cmd: "color", lamp: lampCard.modelData.id, value: parent.modelData.color })
+                    onClicked: root.cmd(parent.modelData.white
+                      ? { cmd: "white", lamp: lampCard.modelData.id }
+                      : { cmd: "color", lamp: lampCard.modelData.id, value: parent.modelData.color })
                   }
                 }
               }

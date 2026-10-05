@@ -122,9 +122,10 @@ function parseColorsToml(text) {
   return out
 }
 
+// White first (the lamp's white mode, not RGB white), then the theme's colours.
 function swatches(palette) {
-  var out = []
-  var seen = {}
+  var out = [{ key: "white", color: "#ffffff", white: true }]
+  var seen = { "#ffffff": true }
   PALETTE_KEYS.forEach(function(k) {
     var c = palette && palette[k]
     if (c && !seen[c]) { seen[c] = true; out.push({ key: k, color: c }) }
