@@ -10,7 +10,8 @@ back as it was when it wakes.
 - **Local.** Commands go straight to the lamp over your home network. The cloud
   is used once during setup, to fetch the lamp's key, and logged out right after.
 - **No developer account.** Setup is one QR scan in the Smart Life app.
-- **Nothing to install.** It only uses what Omarchy already ships.
+- **Nothing to install.** It only uses what Omarchy already ships: Python 3
+  (standard library), ImageMagick and qrencode.
 
 ## What you need
 
