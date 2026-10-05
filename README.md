@@ -1,22 +1,26 @@
 # OmaMood
 
-Your Tuya Wi-Fi lamp in the [Omarchy](https://omarchy.org) bar. Power,
-brightness and colour from the panel or keys; the lamp follows your wallpaper
-when you change themes, and switches off while the computer sleeps and comes
+Control your Tuya Wi-Fi lamp from the [Omarchy](https://omarchy.org) bar: power,
+brightness and colour. The lamp can match your wallpaper or theme accent every
+time you change themes, and it switches off while the computer sleeps, coming
 back as it was when it wakes.
 
 <p align="center"><img src="docs/screenshot.png" alt="The OmaMood panel: lamp power and brightness, Match lamp to Wallpaper / Theme accent / Custom, and colour swatches" width="420"></p>
 
-- **Local.** Commands go straight to the lamp over your LAN. The cloud is used
-  once, to fetch the lamp's key, and the session is logged out right after.
+- **Local.** Commands go straight to the lamp over your home network. The cloud
+  is used once during setup, to fetch the lamp's key, and logged out right after.
 - **No developer account.** Setup is one QR scan in the Smart Life app.
-- **Nothing to install.** Python standard library, ImageMagick and qrencode:
-  all already part of Omarchy.
+- **Nothing to install.** It only uses what Omarchy already ships.
 
-For lamps that use the Smart Life / Tuya Smart app or a rebrand of it (LSC
-Smart Connect and others). Tested on the LSC Mood Light; other Tuya lights with
-the standard data points should work through the generic profiles. See
-[Lamps](#lamps) for what has been confirmed, and add yours.
+## What you need
+
+- Omarchy.
+- A Wi-Fi lamp that works with the **Smart Life** or **Tuya Smart** app (or a
+  rebrand of it, like LSC Smart Connect), already paired on your phone.
+- The lamp and this computer on the same network (not a guest network).
+
+Tested on the LSC Mood Light; other Tuya lights should work too. See
+[Lamps](#lamps).
 
 ## Install
 
@@ -24,104 +28,148 @@ the standard data points should work through the generic profiles. See
 omarchy plugin add https://github.com/defkode/omarchy-moodlight --enable
 ```
 
-A bulb appears in the bar. Update later with
-`omarchy plugin update io.github.defkode.omamood && omarchy restart shell`.
+A bulb icon appears in the bar.
 
-## Set up your lamps
+## Set up
 
-1. The lamp must already be paired in **Smart Life** (or Tuya Smart) on your phone.
-2. In the app: **Me → ⚙ Settings → Account and Security → User Code**.
-3. Click the bulb in the bar, type the User Code, press **Show QR**.
-4. In the app: **+ → Scan**, scan the code, tap **Confirm login**. The app
-   names the login "Home Assistant": OmaMood uses the same public sign-in that
-   Home Assistant's official Tuya integration does, so no developer account is
-   needed. You can remove it in the app afterwards; the lamps keep working.
-5. OmaMood finds the lamps on your network and lists them.
-6. Click **Install** next to "Theme hook not installed" so lamps follow theme changes.
+1. In the Smart Life app, find your **User Code**:
+   **Me → ⚙ Settings → Account and Security → User Code**.
+2. Click the bulb in the bar. Type the User Code and press **Show QR**.
+3. In the app, tap **+ → Scan**, scan the QR code, and tap **Confirm login**.
+   - The app calls this login "Home Assistant". That's expected: OmaMood signs
+     in the same way Home Assistant's official Tuya integration does, which is
+     why no developer account is needed. You can remove "Home Assistant" from
+     the app afterwards; your lamps keep working.
+4. OmaMood finds your lamps on the network and adds them. Devices that aren't
+   lights (plugs, sensors) are skipped.
+5. If the panel says **"Theme hook not installed"**, click **Install**. This lets
+   the lamp follow theme changes.
 
-Keys are stored in `~/.config/omamood/devices.json`, readable only by you.
-
-Prefer the terminal? `~/.config/omarchy/plugins/io.github.defkode.omamood/omamood setup qr`.
-Already have a local key (e.g. from `tinytuya wizard`)?
-`omamood setup manual --id DEVICE_ID --key LOCAL_KEY [--ip IP] --name "Desk lamp"`.
+That's it. The lamp's key is stored in `~/.config/omamood/devices.json`,
+readable only by you.
 
 ## Use
 
-- **Bar icon:** click for the panel, right-click to toggle, scroll for brightness.
-  The bulb takes the lamp's colour.
-- **Panel:** per lamp power and brightness; *Match lamp to* (what theme changes
-  colour the lamp from); and, when that is *Custom*, swatches: white (the lamp's
-  warm white) and your theme's colours, plus the current wallpaper's colour; what to match the lamp to when the theme changes.
-  **Manage lamps** adds lamps (QR) or removes them (Remove → Confirm?). Keys: `Space` toggles, `←/→` brightness, `Esc` closes.
-- **Theme change:** lamps that are on take the new wallpaper's main colour (or the
-  theme accent). Muted palettes are made more saturated so they still read as a
-  colour on an LED; grey wallpapers give white.
-- **Sleep:** lamps switch off before the computer suspends and return to exactly
-  what they were after it wakes (`sleepAction`).
+### The bar icon
 
-### Keybindings
+- **Click** opens the panel. **Right-click** turns the lamps on or off.
+  **Scroll** changes brightness.
+- The bulb takes the lamp's colour.
 
-Plugins can't add keybindings, so paste what you want into `~/.config/hypr/bindings.lua`:
+### The panel
+
+- **Power** switch and **brightness** slider for each lamp.
+- **Match lamp to** decides what happens when you change themes:
+  - **Wallpaper**: the lamp takes the new wallpaper's main colour.
+  - **Theme accent**: the lamp takes the theme's accent colour.
+  - **Custom**: theme changes leave the lamp alone, and you pick the colour from
+    the swatches: white (the lamp's warm white), your theme's colours, or
+    **Wallpaper** for the current wallpaper's colour.
+- **Manage lamps** adds more lamps (QR again) or removes one
+  (**Remove**, then **Confirm?**).
+- **Find lamps** finds lamps again if one shows *Offline*, for example after
+  your router gave it a new address.
+- Keyboard: `Space` toggles power, `←` `→` change brightness, `Esc` closes.
+
+Lamps that are off stay off when you change themes. Muted theme colours are
+made a little more saturated so they still look like a colour on an LED, and
+grey wallpapers give white. The lamp follows **theme** changes; changing only
+the wallpaper doesn't recolour it yet ([#1](https://github.com/defkode/omarchy-moodlight/issues/1)).
+
+### Sleep
+
+Before the computer suspends, the lamps switch off. When it wakes, they come
+back exactly as they were.
+
+### Keybindings (optional)
+
+Plugins can't add keybindings themselves. To add some, paste these into
+`~/.config/hypr/bindings.lua`:
 
 ```lua
 o.bind("SUPER + ALT + L", "Toggle lamps", "omarchy-shell -q omamood toggle")
 o.bind("SUPER + ALT + SHIFT + L", "Lamps panel", "omarchy-shell shell toggle io.github.defkode.omamood")
 ```
 
-Other verbs: `on off brighter dimmer white wallpaper accent blink`, and
-`color '#ff8800'`.
+Other actions you can bind the same way: `on`, `off`, `brighter`, `dimmer`,
+`white`, `wallpaper`, `accent`, `blink`, and `color '#ff8800'`.
 
-### Command line and scripts
+### Command line (optional)
 
 ```bash
 alias omamood=~/.config/omarchy/plugins/io.github.defkode.omamood/omamood
+
 omamood status
-omamood color orange --brightness 40
-omamood blink --color '#00ff00'          # e.g. at the end of a long job: make && omamood blink
-omamood timer 30
-omamood remove "Desk lamp"               # forget a lamp and its key
-omamood status --json                    # for scripts and AI agents
+omamood on | off | toggle
+omamood brightness 40             # or +10 / -10
+omamood color orange              # a name or '#ff8800'
+omamood white
+omamood timer 30                  # turn off in 30 minutes
+omamood blink                     # e.g. make && omamood blink
+omamood remove "Desk lamp"        # forget a lamp
+omamood status --json             # for scripts and AI agents
 ```
 
-### Settings
+`--lamp NAME` picks one lamp; without it, commands go to all of them.
+`omamood --help` lists everything.
 
-In the panel, or `omarchy bar set io.github.defkode.omamood <key> <value>`:
+## Settings
 
-| key | default | |
+Most people only need the panel. Everything can also be set with
+`omarchy bar set io.github.defkode.omamood <key> <value>`:
+
+| Setting | Default | What it does |
 |:--|:--|:--|
-| `colorSource` | `wallpaper` | what to match the lamp to on theme change: `wallpaper`, `accent` (theme accent) or `off` (Custom: you pick) |
-| `saturationFloor` | `70` | minimum saturation (%) for theme colours |
-| `sleepAction` | `off` | turn lamps off before suspend, restore after; `none` to leave them |
-| `tintIcon` | `true` | colour the bar icon |
+| `colorSource` | `wallpaper` | **Match lamp to**: `wallpaper`, `accent` or `off` (Custom) |
+| `saturationFloor` | `70` | how much (%) muted theme colours are boosted |
+| `sleepAction` | `off` | `off`: lamps off during sleep. `none`: leave them alone |
+| `tintIcon` | `true` | colour the bar icon like the lamp |
+
+## Update and remove
+
+```bash
+omarchy plugin update io.github.defkode.omamood && omarchy restart shell
+omarchy plugin remove io.github.defkode.omamood
+```
+
+Removing the plugin leaves `~/.config/omamood/` (your lamps and keys) in place;
+delete that folder too if you want them gone.
 
 ## Lamps
 
-| Lamp | Protocol | Tested by | Notes |
+| Lamp | Tuya protocol | Tested by | Notes |
 |:--|:--|:--|:--|
-| LSC Smart Connect Mood Light RGB+WW (Action 3204432) | 3.3 | @defkode | white is fixed 3000K |
-| Other Tuya lights with standard DPs 20-28 | 3.3 | — | generic profile `tuya-light-v2` |
-| Older Tuya bulbs with DPs 1-5 | 3.3 | — | generic profile `tuya-light-v1` |
+| LSC Smart Connect Mood Light RGB+WW (Action 3204432) | 3.3 | @defkode | white is fixed at 3000K |
+| Other Tuya lights with the standard data points (20-28) | 3.3 | — | generic profile `tuya-light-v2` |
+| Older Tuya bulbs (data points 1-5) | 3.3 | — | generic profile `tuya-light-v1` |
 
-Yours works too? Add it to this table: [docs/ADDING_DEVICES.md](docs/ADDING_DEVICES.md)
-(or ask your coding agent to run the `add-device` skill). Lamps on Tuya
-protocol 3.4/3.5 are not supported yet.
+Lamps using Tuya protocol 3.4 or 3.5 aren't supported yet. During setup they
+show up as not found.
+
+Yours works too? Add it to this table: see
+[docs/ADDING_DEVICES.md](docs/ADDING_DEVICES.md), or ask your coding agent to
+use the `add-device` skill.
 
 ## Troubleshooting
 
-- **"Offline" / IP changed:** panel → **Find lamps** (or `omamood discover`). A
-  DHCP reservation in your router keeps the IP stable.
-- **Not found during setup:** the lamp and this computer must be on the same
-  network (not a guest network). Firewalls are fine: OmaMood only makes outgoing
-  connections.
-- **Doesn't follow themes:** panel shows "Theme hook not installed" → **Install**.
-- **Logs:** `journalctl -t omarchy-shell | grep -i omamood`, and
-  `omarchy-shell omamood status | python3 -m json.tool`.
+- **A lamp shows "Offline":** click **Find lamps** in the panel. To stop this
+  happening, give the lamp a fixed IP address (a DHCP reservation) in your router.
+- **No lamps found during setup:** make sure the lamp and the computer are on the
+  same network. Firewalls are fine: OmaMood only makes outgoing connections.
+- **The lamp doesn't follow theme changes:** check **Match lamp to** isn't
+  *Custom*, and click **Install** if the panel says "Theme hook not installed".
+- **You re-paired the lamp in the app:** its key changes. Remove it in
+  **Manage lamps** and add it again with the QR code.
+- **Something else:** `omarchy-shell omamood status | python3 -m json.tool`
+  shows what the plugin sees, and `journalctl -t omarchy-shell | grep -i omamood`
+  its log.
 
 ## Contributing
 
-`tools/check` runs everything. [AGENTS.md](AGENTS.md) is the short guide (for
-people and coding agents alike); [BRIDGE.md](BRIDGE.md) the helper's contract.
+Run `tools/check` before sending changes. [AGENTS.md](AGENTS.md) is the short
+guide for people and coding agents; [BRIDGE.md](BRIDGE.md) describes the helper
+process; [docs/ADDING_DEVICES.md](docs/ADDING_DEVICES.md) covers new lamps.
 
-MIT licence. The Tuya protocol work stands on the shoulders of
+MIT licence. The Tuya protocol work builds on
 [tinytuya](https://github.com/jasonacox/tinytuya) and
 [tuya-device-sharing-sdk](https://github.com/tuya/tuya-device-sharing-sdk).
