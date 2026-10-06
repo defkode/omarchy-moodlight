@@ -32,6 +32,7 @@ Every command may carry `"id"`; the bridge then answers with a `result` line.
 | `settings` | `saturationFloor` (0-1), `sleepAction` (`off`/`none`) | |
 | `reload` | | re-read devices.json |
 | `discover` | | find IPs again, save, reload |
+| `check` | `lamp`? | online lamps must answer a ping within 2 s (else marked unreachable); unreachable ones get `retry` |
 | `retry` | `lamp`?, `minInterval`? (30 s) | reconnect unreachable lamps now; search the LAN for a new IP unless a search ran within `minInterval` |
 | `remove` | `lamp` (required, id or name) | forget the lamp: drop it and its key from devices.json |
 | `state` | | emit a state line now |
@@ -50,7 +51,9 @@ Every command may carry `"id"`; the bridge then answers with a `result` line.
 {"type": "result", "id": 8, "ok": false, "error": "no lamp 'desk'"}
 ```
 
-An unreachable lamp is retried with backoff (1 s doubling to 15 s); after 3 failures the
+A lamp that stops answering (heartbeat every 5 s, silent for 12 s) is marked
+unreachable, so an unplugged lamp shows up within about 7-15 s, or within 2 s of
+opening the panel (`check`). An unreachable lamp is retried with backoff (1 s doubling to 15 s); after 3 failures the
 bridge searches the LAN for it (at most every 5 minutes), so a lamp that got a new IP from
 DHCP is found and reconnected without user action. Commands sent while a lamp is
 unreachable trigger one connection attempt and are then dropped, except the after-wake

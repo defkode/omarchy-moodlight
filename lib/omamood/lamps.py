@@ -77,7 +77,8 @@ class Lamp:
         if not self.record.get("ip"):
             raise ConnectionError("no IP address yet (run discover)")
         self.device = tuya.Device(self.id, self.record["ip"], self.record["key"],
-                                  self.record.get("version", "3.3"), timeout=timeout)
+                                  self.record.get("version", "3.3"), timeout=timeout,
+                                  port=self.record.get("port", tuya.PORT))
         self.device.connect()
         self.update(self.device.query(), replace=True)
         if self.light is None:
@@ -115,6 +116,16 @@ class Lamp:
             self.update(msg.dps)
             return True
         return False
+
+    def ping(self, wait):
+        """Heartbeat and wait for any reply; ConnectionError if the lamp stays silent."""
+        sent = time.monotonic()
+        self.device.heartbeat()
+        while time.monotonic() - sent < wait:
+            self.pump(max(0.05, wait - (time.monotonic() - sent)))
+            if self.last_seen >= sent:
+                return
+        raise ConnectionError("no answer within %.0f s" % wait)
 
     def send(self, writes):
         for i, dps in enumerate(writes):

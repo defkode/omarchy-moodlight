@@ -68,7 +68,7 @@ function hsvToHex(h, s, v) {
 // (the switch and the brightness label already say so).
 function lampLine(l, searching) {
   if (!l.online) return searching ? "Looking for it on your network…"
-    : "Can't reach it. Is it plugged in and on Wi-Fi?"
+    : "Can't reach it. Is it plugged in and on Wi‑Fi?"
   if (!l.on) return "Off"
   if (l.timer) return "Off in " + Math.ceil(l.timer / 60) + " min"
   return ""
@@ -177,7 +177,7 @@ function themeCommand(colorSource) {
 
 // Validate a JSON command string from IPC. Returns {ok, cmd|error}.
 var COMMANDS = ["power", "brightness", "white", "color", "colour", "hsv", "timer", "blink", "refresh",
-  "wallpaper", "accent", "reload", "state", "discover", "retry", "remove", "setup.qr", "setup.cancel"]
+  "wallpaper", "accent", "reload", "state", "discover", "retry", "check", "remove", "setup.qr", "setup.cancel"]
 
 function parseCommand(json) {
   var cmd

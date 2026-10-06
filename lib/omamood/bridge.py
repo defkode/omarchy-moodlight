@@ -25,8 +25,9 @@ import traceback
 
 from . import cloud, discovery, lamps, profiles, store, wallpaper
 
-HEARTBEAT = 9.0
-STALE = 25.0
+HEARTBEAT = 5.0             # a lamp answers every heartbeat ...
+STALE = 12.0                # ... so this much silence means it is gone (unplugged, off Wi-Fi)
+PING_WAIT = 2.0             # "check": an online lamp must answer within this
 BACKOFF_MAX = 15.0
 REDISCOVER_AFTER = 3        # failed reconnects before searching the LAN for a moved lamp
 REDISCOVER_EVERY = 300.0    # at most one automatic search per 5 minutes
@@ -148,6 +149,13 @@ class Bridge:
                 raise lamps.CommandError("no lamp %r" % sel)
             self.load()
             return {"removed": removed.get("name") or removed["id"]}
+        if name == "check":
+            # Panel opened: make sure what it shows is true right now. Online
+            # lamps must answer a ping within PING_WAIT; unreachable ones retry.
+            for w in self.targets(cmd):
+                if w.lamp.online:
+                    w.submit({"cmd": "ping"})
+            return self.handle(dict(cmd, cmd="retry"))
         if name == "retry":
             # Panel opened, or Retry clicked: reconnect unreachable lamps now and,
             # unless a search just ran, look for lamps whose IP address changed.
@@ -430,12 +438,15 @@ class Worker(threading.Thread):
                 self.lamp.send(self.lamp.light.plan_restore(cmd["status"]))
             elif name == "refresh":
                 self.lamp.update(self.lamp.device.query(), replace=True)
+            elif name == "ping":
+                self.lamp.ping(PING_WAIT)
             else:
                 self.lamp.send(self.lamp.plan(cmd))
             self.lamp.error = None
         except (OSError, ConnectionError):
-            # The connection died mid-command: run it again once reconnected.
-            if not cmd.get("_retried"):
+            # The connection died mid-command: run it again once reconnected
+            # (a failed ping has done its job: it found the lamp gone).
+            if not cmd.get("_retried") and name != "ping":
                 self.q.put(dict(cmd, _retried=True))
             raise
         except lamps.CommandError as e:

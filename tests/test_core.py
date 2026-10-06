@@ -51,11 +51,12 @@ class AesTest(unittest.TestCase):
 class FakeLamp(threading.Thread):
     """A Tuya 3.3 device on localhost, enough to answer queries and controls."""
 
-    def __init__(self, dps, key=KEY, version="3.3", reject_query=False):
+    def __init__(self, dps, key=KEY, version="3.3", reject_query=False, silent=False):
         super().__init__(daemon=True)
         self.dps = dict(dps)
         self.codec = tuya.Codec(key, version)
         self.reject_query = reject_query
+        self.silent = silent          # stops answering heartbeats: an unplugged lamp
         self.received = []
         self.srv = socket.socket()
         self.srv.bind(("127.0.0.1", 0))
@@ -91,7 +92,7 @@ class FakeLamp(threading.Thread):
                     self.dps.update(data["dps"])
                     conn.sendall(tuya.pack_frame(seq, cmd, b"", retcode=0))
                     conn.sendall(tuya.pack_frame(0, tuya.STATUS, self.codec.encode(tuya.STATUS, {"dps": data["dps"], "t": 1}), retcode=0))
-                elif cmd == tuya.HEART_BEAT:
+                elif cmd == tuya.HEART_BEAT and not self.silent:
                     conn.sendall(tuya.pack_frame(seq, cmd, b"", retcode=0))
 
 
@@ -266,6 +267,35 @@ class KeyInputTest(unittest.TestCase):
             for act in sp._actions:
                 if "--key" in act.option_strings:
                     self.assertEqual(act.help, __import__("argparse").SUPPRESS, name)
+
+
+class PingTest(unittest.TestCase):
+    """Panel-open check: an online lamp must answer quickly, or it is gone."""
+
+    def lamp_for(self, fake):
+        from omamood import lamps
+        return lamps.Lamp({"id": "dev1", "name": "Desk", "key": KEY.decode(), "ip": "127.0.0.1",
+                           "port": fake.port, "profile": "tuya-light-v2"}, profiles.load_all())
+
+    def test_answering_lamp(self):
+        fake = FakeLamp({"20": True, "21": "white", "22": 500})
+        fake.start()
+        lamp = self.lamp_for(fake)
+        lamp.connect()
+        lamp.ping(2.0)              # no exception
+        lamp.close()
+
+    def test_silent_lamp(self):
+        import time
+        fake = FakeLamp({"20": True, "21": "white", "22": 500}, silent=True)
+        fake.start()
+        lamp = self.lamp_for(fake)
+        lamp.connect()
+        t = time.monotonic()
+        with self.assertRaises(ConnectionError):
+            lamp.ping(0.5)
+        self.assertLess(time.monotonic() - t, 1.5)
+        lamp.close()
 
 
 class ReconnectTest(unittest.TestCase):

@@ -33,11 +33,10 @@ Panel {
   onLampsChanged: if (lamps.length === 0) setupOpen = false
   // Opening the panel retries unreachable lamps (and searches for a new IP,
   // unless a search ran in the last 30 s).
-  onOpenedChanged: {
-    if (!opened) return
-    for (var i = 0; i < lamps.length; i++)
-      if (!lamps[i].online) { cmd({ cmd: "retry" }); return }
-  }
+  // Opening the panel checks the lamps: an online one must answer within 2 s
+  // (so an unplugged lamp shows as such right away); unreachable ones retry
+  // and are searched for at a new IP unless a search ran in the last 30 s.
+  onOpenedChanged: if (opened && lamps.length > 0) cmd({ cmd: "check" })
   property var palette: ({})
   readonly property color fg: bar ? bar.foreground : Color.foreground
   readonly property color dim: Qt.darker(fg, 1.5)
