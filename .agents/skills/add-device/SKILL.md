@@ -9,8 +9,10 @@ The user owns the lamp; you can only learn what it answers. Never invent DPs.
 
 1. **Is it configured?** `./omamood devices --json`. If not: `./omamood setup qr`
    (the user scans with Smart Life; you cannot do that step) or
-   `./omamood setup manual --id ID --key KEY [--ip IP] --name NAME` when they
-   already have the local key. Keys never go into chat, files in the repo, or commits.
+   `./omamood setup manual --id ID [--ip IP] --name NAME` when they
+   already have the local key: it prompts for the key, so let the user type it, or
+   have them pipe it from their own file with `--key-stdin < FILE`. Never put a key
+   on a command line, in chat, in files in the repo, or in commits.
 2. **Probe.** `./omamood probe --lamp NAME --json`. Keep the output (minus `device.id`)
    for the pin. If `profile` is set and `state` matches what the lamp shows, it
    already works - ask the user whether they want it pinned as tested.

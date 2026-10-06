@@ -6,7 +6,8 @@ You only add a file when your lamp needs a quirk, or to mark it **tested**.
 
 ## 1. Look at what your lamp says
 
-Add it first (`omamood setup qr`, or `setup manual --id --key [--ip]`), then:
+Add it first (`omamood setup qr`, or `omamood setup manual --id ID [--ip IP]`,
+which asks for the local key), then:
 
 ```bash
 omamood probe --lamp "Desk lamp" --json
@@ -14,7 +15,9 @@ omamood probe --lamp "Desk lamp" --json
 
 You get its raw `dps`, the `profile` picked (or `null`), the decoded `state`,
 and — when nothing matches — a `draft_profile` to start from. For a device you
-have not added: `omamood probe --id ID --key KEY --ip IP`.
+have not added: `omamood probe --id ID --ip IP` (it asks for the key; scripts can
+pipe it with `--key-stdin`). Keys are never passed as arguments: other processes
+can read those, and shells keep them in history.
 
 Change the lamp with its own button or the Smart Life app and probe again to
 see which DP moved. Note the product name from `omamood devices --json`.

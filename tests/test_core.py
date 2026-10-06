@@ -223,6 +223,51 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(store.load_devices(), [])
 
 
+class KeyInputTest(unittest.TestCase):
+    """Local keys never come from argv (readable via /proc, kept in shell history)."""
+
+    def setUp(self):
+        from omamood import cli
+        self.cli = cli
+
+    def run_cli(self, argv):
+        import contextlib, io
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = self.cli.main(argv)
+        return code, out.getvalue() + err.getvalue()
+
+    def test_key_argument_refused(self):
+        for argv in (["setup", "manual", "--id", "abc", "--key", "0123456789abcdef"],
+                     ["probe", "--id", "abc", "--ip", "192.0.2.1", "--key", "0123456789abcdef"]):
+            with self.subTest(argv=argv[0]):
+                code, out = self.run_cli(argv)
+                self.assertEqual(code, 2)
+                self.assertIn("--key is not accepted", out)
+                self.assertNotIn("0123456789abcdef", out)
+
+    def test_read_key(self):
+        import argparse, io
+        class Pipe(io.StringIO):
+            def isatty(self):
+                return False
+        ns = argparse.Namespace(key=None, key_stdin=True)
+        self.assertEqual(self.cli.read_key(ns, Pipe("0123456789abcdef\n")), "0123456789abcdef")
+        with self.assertRaises(self.cli.KeyError_):
+            self.cli.read_key(ns, Pipe("short\n"))
+        # No --key-stdin and no terminal to prompt on: refuse rather than guess.
+        with self.assertRaises(self.cli.KeyError_):
+            self.cli.read_key(argparse.Namespace(key=None, key_stdin=False), Pipe(""))
+
+    def test_no_option_takes_a_key(self):
+        p = self.cli.parser()
+        subs = [a for a in p._actions if isinstance(a, __import__("argparse")._SubParsersAction)][0]
+        for name, sp in list(subs.choices.items()) + list(subs.choices["setup"]._actions[-1].choices.items()):
+            for act in sp._actions:
+                if "--key" in act.option_strings:
+                    self.assertEqual(act.help, __import__("argparse").SUPPRESS, name)
+
+
 class WallpaperTest(unittest.TestCase):
     def test_histogram_and_pick(self):
         text = ("      2428: (1.2,55.5,107.2) #01386B srgb(0%,21%,42%)\n"

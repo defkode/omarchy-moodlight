@@ -8,6 +8,7 @@ Exit codes: 0 ok, 1 command failed, 2 usage, 3 no lamps configured,
 """
 
 import argparse
+import getpass
 import json
 import os
 import shutil
@@ -192,15 +193,40 @@ def cmd_profiles(args):
     return 0
 
 
+KEY_HELP = ("the local key is never taken on the command line (other processes can read "
+            "arguments, and shells keep them in history): type it at the prompt, or pipe it "
+            "with --key-stdin")
+
+
+class KeyError_(ValueError):
+    pass
+
+
+def read_key(args, stdin=None):
+    """The 16-character local key, from stdin (--key-stdin) or a hidden prompt."""
+    stdin = stdin or sys.stdin
+    if getattr(args, "key", None):
+        raise KeyError_("--key is not accepted: " + KEY_HELP)
+    if getattr(args, "key_stdin", False):
+        key = stdin.readline().strip()
+    elif stdin.isatty():
+        key = getpass.getpass("Local key (hidden): ").strip()
+    else:
+        raise KeyError_("no key given: " + KEY_HELP)
+    if len(key) != 16:
+        raise KeyError_("a Tuya local key is 16 characters, got %d" % len(key))
+    return key
+
+
 def cmd_probe(args):
     """Dump a device's raw DPs and what OmaMood makes of them: the first step of
     adding support for a new lamp (docs/ADDING_DEVICES.md)."""
-    if args.id and args.key and args.ip:
-        rec = {"id": args.id, "key": args.key, "ip": args.ip, "version": args.version, "name": args.id}
+    if args.id and args.ip:
+        rec = {"id": args.id, "key": read_key(args), "ip": args.ip, "version": args.version, "name": args.id}
     else:
         recs = [r for r in store.load_devices() if args.lamp in (None, "all", r["id"], r.get("name"))]
         if not recs:
-            return _err(args, "no such lamp; pass --id --key --ip to probe an unconfigured device", 3)
+            return _err(args, "no such lamp; pass --id and --ip (the key is asked for) to probe an unconfigured device", 3)
         rec = recs[0]
     db = profiles.load_all()
     d = tuya.Device(rec["id"], rec["ip"], rec["key"], rec.get("version", "3.3"))
@@ -307,7 +333,7 @@ def cmd_setup_qr(args):
 
 def cmd_setup_manual(args):
     from .bridge import setup_devices
-    rec = {"id": args.id, "key": args.key, "name": args.name or args.id, "version": args.version,
+    rec = {"id": args.id, "key": read_key(args), "name": args.name or args.id, "version": args.version,
            "product": [args.product] if args.product else []}
     if args.ip:
         rec["ip"] = args.ip
@@ -362,8 +388,10 @@ def parser():
     s = sub.add_parser("remove", help="forget a lamp (its key is deleted)")
     s.add_argument("name", nargs="?", help="lamp name or id")
     s = sub.add_parser("probe", help="dump a device's raw data points (adding a device)")
-    for f in ("--id", "--key", "--ip"):
+    for f in ("--id", "--ip"):
         s.add_argument(f)
+    s.add_argument("--key-stdin", action="store_true", help="read the local key from stdin instead of prompting")
+    s.add_argument("--key", help=argparse.SUPPRESS)     # refused with an explanation
     s.add_argument("--version", default="3.3")
 
     s = sub.add_parser("setup", help="add lamps")
@@ -374,7 +402,8 @@ def parser():
     q.add_argument("--user-code")
     m = ss.add_parser("manual", help="add a lamp from its id and local key")
     m.add_argument("--id", required=True)
-    m.add_argument("--key", required=True)
+    m.add_argument("--key-stdin", action="store_true", help="read the local key from stdin instead of prompting")
+    m.add_argument("--key", help=argparse.SUPPRESS)     # refused with an explanation
     m.add_argument("--ip")
     m.add_argument("--name")
     m.add_argument("--product")
@@ -404,6 +433,8 @@ def main(argv):
         raise
     except tuya.UnsupportedProtocol as e:
         return _err(args, str(e), 4)
+    except KeyError_ as e:
+        return _err(args, str(e), 2)
     except (lamps.CommandError, cloud.CloudError, profiles.ProfileError, tuya.TuyaError, OSError, TimeoutError, ValueError) as e:
         return _err(args, str(e))
     except KeyboardInterrupt:
