@@ -153,8 +153,11 @@ use the `add-device` skill.
 
 ## Troubleshooting
 
-- **A lamp shows "Offline":** click **⚙ → Find lamps** in the panel. To stop this
-  happening, give the lamp a fixed IP address (a DHCP reservation) in your router.
+- **"Can't reach it":** OmaMood keeps retrying and, if the lamp got a new IP
+  address, finds it by itself; **Retry** does it immediately. If it still can't
+  find it, the lamp isn't on your Wi-Fi: unplug it for 10 seconds, or check it
+  shows as online in the Smart Life app. A fixed IP (DHCP reservation in your
+  router) avoids address changes altogether.
 - **No lamps found during setup:** make sure the lamp and the computer are on the
   same network. Firewalls are fine: OmaMood only makes outgoing connections.
 - **The lamp doesn't follow theme changes:** check **Match lamp to** isn't

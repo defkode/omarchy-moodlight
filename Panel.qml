@@ -31,6 +31,13 @@ Panel {
   property bool setupOpen: false
   // Removing the last lamp hides the footer with "Done": leave manage mode then.
   onLampsChanged: if (lamps.length === 0) setupOpen = false
+  // Opening the panel retries unreachable lamps (and searches for a new IP,
+  // unless a search ran in the last 30 s).
+  onOpenedChanged: {
+    if (!opened) return
+    for (var i = 0; i < lamps.length; i++)
+      if (!lamps[i].online) { cmd({ cmd: "retry" }); return }
+  }
   property var palette: ({})
   readonly property color fg: bar ? bar.foreground : Color.foreground
   readonly property color dim: Qt.darker(fg, 1.5)
@@ -253,7 +260,8 @@ Panel {
             Item {
               width: parent.width
               implicitHeight: Math.max(lampText.implicitHeight, power.implicitHeight)
-              readonly property Item side: root.setupOpen ? removeButton : power
+              readonly property Item side: root.setupOpen ? removeButton
+                : lampCard.modelData.online ? power : retryButton
 
               // Name, and a status line only when there is news; centred
               // against the power switch.
@@ -278,7 +286,8 @@ Panel {
                   id: lampLine
                   textFormat: Text.PlainText
                   width: parent.width
-                  text: Model.lampLine(lampCard.modelData)
+                  text: Model.lampLine(lampCard.modelData, root.searching)
+                  wrapMode: Text.Wrap
                   visible: text !== ""
                   color: root.dim
                   font.family: root.fontFamily
@@ -288,13 +297,27 @@ Panel {
               }
               ToggleSwitch {
                 id: power
-                visible: !root.setupOpen
+                visible: !root.setupOpen && lampCard.modelData.online
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 checked: lampCard.modelData.on === true
                 interactive: lampCard.modelData.online
                 foreground: root.fg
                 onToggled: root.cmd({ cmd: "power", lamp: lampCard.modelData.id, value: checked ? "off" : "on" })
+              }
+              // An unreachable lamp gets Retry instead of a switch that can't act:
+              // reconnect now and look for it on the network (new IP address).
+              Button {
+                id: retryButton
+                visible: !root.setupOpen && !lampCard.modelData.online
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.searching ? "Looking…" : "Retry"
+                bordered: true
+                foreground: root.searching ? root.dim : root.fg
+                fontFamily: root.fontFamily
+                fontSize: Style.font.caption
+                onClicked: if (!root.searching) root.cmd({ cmd: "retry", lamp: lampCard.modelData.id, minInterval: 5 })
               }
               // Two clicks: "Remove", then "Confirm?" within 3 s. Forgets the lamp
               // and its key; adding it back takes a QR scan.
@@ -343,7 +366,7 @@ Panel {
 
             Loader {
               width: parent.width
-              active: root.lamps.length === 1 && !root.showSetup
+              active: root.lamps.length === 1 && !root.showSetup && lampCard.modelData.online
               visible: active
               sourceComponent: followSection
             }

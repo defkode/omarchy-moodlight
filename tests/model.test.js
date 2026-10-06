@@ -46,7 +46,8 @@ Deno.test("summary lines", () => {
   assertEquals(M.summary([lamp()], { stage: "scan" }), "Scan with Smart Life, then tap Confirm login")
   assertEquals(M.lampLine(lamp()), "")                                 // on: nothing to add
   assertEquals(M.lampLine(lamp({ on: false })), "Off")
-  assertEquals(M.lampLine(lamp({ online: false, error: "timed out" })), "Offline · timed out")
+  assertEquals(M.lampLine(lamp({ online: false, error: "timed out" })), "Can't reach it. Is it plugged in and on Wi-Fi?")
+  assertEquals(M.lampLine(lamp({ online: false }), true), "Looking for it on your network…")
   assertEquals(M.lampLine(lamp({ timer: 600 })), "Off in 10 min")
   assertEquals(M.tooltip([lamp(), lamp({ name: "Desk", on: false })]), "Moodlight · 76%\nDesk · off")
 })

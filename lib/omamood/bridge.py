@@ -27,7 +27,10 @@ from . import cloud, discovery, lamps, profiles, store, wallpaper
 
 HEARTBEAT = 9.0
 STALE = 25.0
-BACKOFF_MAX = 60.0
+BACKOFF_MAX = 15.0
+REDISCOVER_AFTER = 3        # failed reconnects before searching the LAN for a moved lamp
+REDISCOVER_EVERY = 300.0    # at most one automatic search per 5 minutes
+RESTORE_FOR = 120.0         # an after-wake restore waits this long for the lamp to come back
 
 
 class Bridge:
@@ -42,6 +45,7 @@ class Bridge:
         # "Find lamps": idle -> searching -> done (found/moved/missing), back to idle after a while.
         self.discovery = {"stage": "idle"}
         self.discovery_lock = threading.Lock()
+        self.last_discovery = 0.0
         self.setup_cancel = threading.Event()
         self.settings = {"saturationFloor": 0.7, "sleepAction": "off"}
         self.sleep_snapshot = None
@@ -90,7 +94,10 @@ class Bridge:
                 self.workers[r["id"]] = w
                 w.start()
             else:
+                moved = w.lamp.record.get("ip") != r.get("ip")
                 w.lamp.record.update(r)
+                if moved:
+                    w.wake()        # reconnect at the new address now
         self.mark()
 
     def targets(self, cmd):
@@ -141,6 +148,15 @@ class Bridge:
                 raise lamps.CommandError("no lamp %r" % sel)
             self.load()
             return {"removed": removed.get("name") or removed["id"]}
+        if name == "retry":
+            # Panel opened, or Retry clicked: reconnect unreachable lamps now and,
+            # unless a search just ran, look for lamps whose IP address changed.
+            offline = [w for w in self.targets(cmd) if not w.lamp.online]
+            for w in offline:
+                w.wake()
+            if offline:
+                self.request_rediscover(float(cmd.get("minInterval", 30)))
+            return {"lamps": [w.lamp.name for w in offline]}
         if name == "discover":
             if self.discovery.get("stage") == "searching":
                 return {"already": True}
@@ -182,7 +198,8 @@ class Bridge:
             snap, self.sleep_snapshot = self.sleep_snapshot, None
             for lid, status in snap.items():
                 if lid in self.workers:
-                    self.workers[lid].submit({"cmd": "restore", "status": status, "wait": 20})
+                    self.workers[lid].submit({"cmd": "restore", "status": status,
+                                              "until": time.time() + RESTORE_FOR})
 
     def watch_sleep(self):
         """logind PrepareForSleep via gdbus (glib2 is always present)."""
@@ -237,9 +254,17 @@ class Bridge:
             self.log("setup failed:", traceback.format_exc())
             self.set_setup(stage="error", error=str(e))
 
+    def request_rediscover(self, min_interval=REDISCOVER_EVERY):
+        """Search the LAN in the background unless a search ran recently."""
+        if time.time() - self.last_discovery < min_interval:
+            return False
+        threading.Thread(target=self.rediscover, daemon=True).start()
+        return True
+
     def rediscover(self):
         if not self.discovery_lock.acquire(blocking=False):
             return
+        self.last_discovery = time.time()
         try:
             self.discovery = {"stage": "searching", "started": time.time()}
             self.mark()
@@ -305,34 +330,65 @@ class Worker(threading.Thread):
 
     def submit(self, cmd):
         self.q.put(cmd)
+        self.wake()
+
+    def wake(self):
         os.write(self.wake_w, b"x")
+
+    def drain_wake(self):
+        try:
+            while os.read(self.wake_r, 4096):
+                pass
+        except BlockingIOError:
+            pass
+
+    def prune(self):
+        """While the lamp is unreachable, drop queued commands (each one already
+        triggered a connection attempt) except those that may wait: an after-wake
+        restore keeps until its deadline."""
+        keep, now = [], time.time()
+        while True:
+            try:
+                cmd = self.q.get_nowait()
+            except queue.Empty:
+                break
+            if cmd is None:
+                continue
+            if cmd.get("until", 0) > now:
+                keep.append(cmd)
+            else:
+                self.bridge.log("%s: unreachable, dropped %s" % (self.lamp.name, cmd.get("cmd")))
+        for cmd in keep:
+            self.q.put(cmd)
 
     def stop(self):
         self.stopping = True
         self.submit(None)
 
     def run(self):
-        backoff = 1.0
+        backoff, failures = 1.0, 0
         while not self.stopping:
+            self.drain_wake()
             try:
                 self.lamp.connect()
-                backoff = 1.0
+                backoff, failures = 1.0, 0
                 self.bridge.mark()
                 self.serve()
             except Exception as e:
+                failures += 1
                 self.lamp.error = str(e)
                 self.bridge.log("%s: %s" % (self.lamp.name, e))
             self.lamp.close()
             self.bridge.mark()
             if self.stopping:
                 break
-            # Wait out the backoff, but wake for queued commands (they retry the connection).
-            try:
-                cmd = self.q.get(timeout=backoff)
-                if cmd is not None:
-                    self.q.put(cmd)
-            except queue.Empty:
-                pass
+            if failures and failures % REDISCOVER_AFTER == 0:
+                # Unreachable at the saved address: maybe DHCP gave it a new one.
+                self.bridge.request_rediscover()
+            self.prune()
+            # Wait out the backoff; a new command, Retry or a new IP wakes us early.
+            # Commands that may wait (restore) get retried at the backoff pace.
+            select.select([self.wake_r], [], [], backoff)
             backoff = min(BACKOFF_MAX, backoff * 2)
 
     def serve(self):

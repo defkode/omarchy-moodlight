@@ -268,6 +268,41 @@ class KeyInputTest(unittest.TestCase):
                     self.assertEqual(act.help, __import__("argparse").SUPPRESS, name)
 
 
+class ReconnectTest(unittest.TestCase):
+    """What happens to commands and searches while a lamp is unreachable."""
+
+    def make(self):
+        import io, time
+        from omamood import bridge, lamps
+        b = bridge.Bridge(out=io.StringIO())
+        w = bridge.Worker(b, lamps.Lamp({"id": "x", "name": "Desk", "key": "k" * 16}, b.profile_db))
+        return b, w, time
+
+    def test_prune_keeps_only_waiting_restores(self):
+        b, w, time = self.make()
+        w.q.put({"cmd": "power", "value": "on"})                          # one attempt, then dropped
+        w.q.put({"cmd": "restore", "status": {}, "until": time.time() + 60})   # after-wake: waits
+        w.q.put({"cmd": "restore", "status": {}, "until": time.time() - 1})    # deadline passed
+        w.q.put(None)
+        w.prune()
+        left = []
+        while not w.q.empty():
+            left.append(w.q.get_nowait())
+        self.assertEqual([c["cmd"] for c in left], ["restore"])
+        self.assertGreater(left[0]["until"], time.time())
+        os.close(w.wake_r); os.close(w.wake_w)
+
+    def test_rediscover_is_throttled(self):
+        b, w, time = self.make()
+        started = []
+        b.rediscover = lambda: started.append(1)
+        b.last_discovery = time.time()
+        self.assertFalse(b.request_rediscover(30))     # a search just ran
+        b.last_discovery = time.time() - 31
+        self.assertTrue(b.request_rediscover(30))
+        os.close(w.wake_r); os.close(w.wake_w)
+
+
 class WallpaperTest(unittest.TestCase):
     def test_histogram_and_pick(self):
         text = ("      2428: (1.2,55.5,107.2) #01386B srgb(0%,21%,42%)\n"
