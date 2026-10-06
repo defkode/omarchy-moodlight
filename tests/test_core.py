@@ -260,6 +260,36 @@ class KeyInputTest(unittest.TestCase):
         with self.assertRaises(self.cli.KeyError_):
             self.cli.read_key(argparse.Namespace(key=None, key_stdin=False), Pipe(""))
 
+    def test_user_code_argument_refused(self):
+        code, out = self.run_cli(["setup", "qr", "--user-code", "ab12cd"])
+        self.assertEqual(code, 2)
+        self.assertIn("--user-code is not accepted", out)
+        self.assertNotIn("ab12cd", out)
+
+    def test_read_user_code(self):
+        import argparse, io
+        class Pipe(io.StringIO):
+            def isatty(self):
+                return False
+        ns = argparse.Namespace(user_code=None, user_code_stdin=True)
+        self.assertEqual(self.cli.read_user_code(ns, Pipe("ab12cd\n")), "ab12cd")
+        with self.assertRaises(self.cli.KeyError_):
+            self.cli.read_user_code(ns, Pipe("\n"))
+        with self.assertRaises(self.cli.KeyError_):
+            self.cli.read_user_code(argparse.Namespace(user_code=None, user_code_stdin=False), Pipe(""))
+
+    def test_qr_text_not_in_arguments(self):
+        import shutil
+        from unittest import mock
+        from omamood import bridge
+        if not shutil.which("qrencode"):
+            self.skipTest("qrencode missing")
+        real = __import__("subprocess").run
+        with mock.patch.object(bridge.subprocess, "run", side_effect=real) as run:
+            rows = bridge.qr_matrix("tuyaSmart--qrLogin?token=SECRET123")
+        self.assertTrue(rows)
+        self.assertNotIn("tuyaSmart--qrLogin?token=SECRET123", run.call_args.args[0])
+
     def test_no_option_takes_a_key(self):
         p = self.cli.parser()
         subs = [a for a in p._actions if isinstance(a, __import__("argparse")._SubParsersAction)][0]

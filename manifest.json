@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.defkode.omamood",
   "name": "OmaMood",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "author": "defkode",
   "license": "MIT",
   "description": "Tuya Wi-Fi lamps in the Omarchy bar, over your LAN: power, brightness and colour; the lamp follows your wallpaper or theme accent and switches off while the computer sleeps. One QR scan with the Smart Life app sets it up; no developer account, no cloud after setup.",

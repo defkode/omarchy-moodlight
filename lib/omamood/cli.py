@@ -218,6 +218,26 @@ def read_key(args, stdin=None):
     return key
 
 
+USER_CODE_HELP = ("the User Code is never taken on the command line (with the QR token it is "
+                  "enough to finish your login): type it at the prompt, or pipe it with --user-code-stdin")
+
+
+def read_user_code(args, stdin=None):
+    """The Smart Life User Code, from stdin (--user-code-stdin) or a prompt."""
+    stdin = stdin or sys.stdin
+    if getattr(args, "user_code", None):
+        raise KeyError_("--user-code is not accepted: " + USER_CODE_HELP)
+    if getattr(args, "user_code_stdin", False):
+        code = stdin.readline().strip()
+    elif stdin.isatty():
+        code = input("Smart Life User Code (Me > Settings > Account and Security > User Code): ").strip()
+    else:
+        raise KeyError_("no User Code given: " + USER_CODE_HELP)
+    if not code:
+        raise KeyError_("the User Code is empty")
+    return code
+
+
 def cmd_probe(args):
     """Dump a device's raw DPs and what OmaMood makes of them: the first step of
     adding support for a new lamp (docs/ADDING_DEVICES.md)."""
@@ -306,11 +326,12 @@ def cmd_discover(args):
 
 def cmd_setup_qr(args):
     from .bridge import setup_devices
-    code = args.user_code or input("Smart Life User Code (Me > Settings > Account and Security > User Code): ").strip()
+    code = read_user_code(args)
     token = cloud.request_qr(code)
     text = cloud.QR_PREFIX + token
     if shutil.which("qrencode"):
-        subprocess.run(["qrencode", "-t", "ANSIUTF8", "-m", "2", text], stdout=sys.stderr)
+        # Through stdin: the token is a login secret, and arguments are visible to every process.
+        subprocess.run(["qrencode", "-t", "ANSIUTF8", "-m", "2"], input=text.encode(), stdout=sys.stderr)
     print("Scan with Smart Life (+ > Scan) and tap Confirm login. Waiting up to 3 minutes...", file=sys.stderr)
     login, deadline = None, time.monotonic() + 180
     while login is None and time.monotonic() < deadline:
@@ -399,7 +420,8 @@ def parser():
     _add_ss = ss.add_parser
     ss.add_parser = lambda name, **kw: _add_ss(name, parents=[common], **kw)
     q = ss.add_parser("qr", help="log in with a Smart Life QR code (no developer account)")
-    q.add_argument("--user-code")
+    q.add_argument("--user-code-stdin", action="store_true", help="read the User Code from stdin instead of prompting")
+    q.add_argument("--user-code", help=argparse.SUPPRESS)   # refused with an explanation
     m = ss.add_parser("manual", help="add a lamp from its id and local key")
     m.add_argument("--id", required=True)
     m.add_argument("--key-stdin", action="store_true", help="read the local key from stdin instead of prompting")

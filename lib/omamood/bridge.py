@@ -457,7 +457,8 @@ class Worker(threading.Thread):
 
 def qr_matrix(text):
     """QR code as rows of '0'/'1' (with quiet zone), via qrencode."""
-    out = subprocess.run(["qrencode", "-t", "ASCII", "-m", "2", text], capture_output=True, text=True, timeout=10)
+    # Through stdin: the token is a login secret, and arguments are visible to every process.
+    out = subprocess.run(["qrencode", "-t", "ASCII", "-m", "2"], input=text, capture_output=True, text=True, timeout=10)
     if out.returncode != 0:
         raise RuntimeError("qrencode failed: %s" % out.stderr.strip())
     # Two characters per module: "##" dark, "  " light; every line equally wide.
